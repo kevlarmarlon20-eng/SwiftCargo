@@ -1,0 +1,23 @@
+{
+  "name": "swiftcargo",
+  "version": "1.0.0",
+  "description": "shipping",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kevlarmarlon20-eng/SwiftCargo.git"
+  },
+  "author": "marlon",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kevlarmarlon20-eng/SwiftCargo/issues"
+  },
+  "homepage": "https://github.com/kevlarmarlon20-eng/SwiftCargo#readme",
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}
