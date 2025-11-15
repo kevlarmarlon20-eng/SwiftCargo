@@ -31,40 +31,123 @@
             </form>
             <p id="tracking-status" class="status-message"></p>
         </section>
-    </main>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Track Your Package - SwiftCargo</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <header>
-        <nav>
-            <div class="logo">
-                <a href="index.html">SwiftCargo</a>
+        <section id="tracking-results" class="track-results-container" style="display: none;">
+            <a href="track.html" class="back-link">&larr; Track another package</a>
+
+            <!-- Summary Box -->
+            <div class="summary-box">
+                <div class="summary-header">
+                    <div>
+                        <span class="status-text">Status: <strong id="summary-status-text">In Transit</strong></span>
+                        <span class="delivery-date">Estimated Delivery: <strong id="summary-delivery-date">Nov 20, 2025</strong></span>
+                    </div>
+                    <button class="share-btn">Share Tracking</button>
+                </div>
+                <h2 class="tracking-number" id="summary-tracking-number">TRK123456789</h2>
+                <div class="progress-bar">
+                    <div class="progress" style="width: 50%;"></div>
+                </div>
+                <div class="summary-addresses">
+                    <div>
+                        <strong>From:</strong>
+                        <p id="summary-origin-address">Sender City, Country</p>
+                    </div>
+                    <div>
+                        <strong>To:</strong>
+                        <p id="summary-destination-address">Recipient City, Country</p>
+                    </div>
+                </div>
             </div>
-            <ul>
-                <li><a href="index.html#services">Services</a></li>
-                <li><a href="index.html#about">About Us</a></li>
-                <li><a href="track.html">Track Package</a></li>
-                <li><a href="index.html#contact">Contact</a></li>
-            </ul>
-        </nav>
-    </header>
 
-    <main>
-        <section class="track-form-section">
-            <h1>Track Your Shipment</h1>
-            <p>Enter the tracking number below to see the status of your shipment.</p>
-            <form id="tracking-form">
-                <input type="text" id="tracking-number-input" placeholder="Enter your tracking number" required>
-                <button type="submit">Track</button>
-            </form>
-            <p id="tracking-status" class="status-message"></p>
+            <!-- Track Alert (e.g., for delays or special instructions) -->
+            <div class="track-alert" style="display: none;">
+                <p id="alert-message">Important: Your package might be delayed due to unforeseen circumstances.</p>
+                <button class="btn btn-warning btn-details">View Details</button>
+            </div>
+
+            <div class="tracking-layout">
+                <div class="main-content">
+                    <!-- Shipment Timeline -->
+                    <div class="layout-card">
+                        <h3>Shipment History</h3>
+                        <div class="shipment-timeline" id="shipment-timeline">
+                            <!-- Timeline items will be dynamically loaded here -->
+                            <div class="timeline-item">
+                                <span class="timeline-status">Package delivered</span>
+                                <span class="timeline-location">New York, NY, USA</span>
+                                <span class="timeline-date">Nov 15, 2025 10:30 AM</span>
+                            </div>
+                            <div class="timeline-item">
+                                <span class="timeline-status">Out for delivery</span>
+                                <span class="timeline-location">New York, NY, USA</span>
+                                <span class="timeline-date">Nov 15, 2025 08:00 AM</span>
+                            </div>
+                            <div class="timeline-item">
+                                <span class="timeline-status">In transit - Arrived at sorting facility</span>
+                                <span class="timeline-location">Chicago, IL, USA</span>
+                                <span class="timeline-date">Nov 14, 2025 06:00 PM</span>
+                            </div>
+                            <div class="timeline-item">
+                                <span class="timeline-status">Shipment picked up</span>
+                                <span class="timeline-location">Los Angeles, CA, USA</span>
+                                <span class="timeline-date">Nov 12, 2025 02:00 PM</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Package Details -->
+                    <div class="layout-card">
+                        <h3>Package Details</h3>
+                        <div class="package-details-grid">
+                            <div><strong>Service:</strong> <span id="detail-service">Express Shipping</span></div>
+                            <div><strong>Weight:</strong> <span id="detail-weight">2.5 kg</span></div>
+                            <div><strong>Dimensions:</strong> <span id="detail-dimensions">30x20x15 cm</span></div>
+                            <div><strong>Contents:</strong> <span id="detail-contents">Electronics</span></div>
+                            <div><strong>Reference:</strong> <span id="detail-reference">PO-98765</span></div>
+                            <div><strong>Carrier:</strong> <span id="detail-carrier">SwiftCargo Logistics</span></div>
+                        </div>
+                        <span class="show-details-toggle">Show More Details</span>
+                        <div class="additional-details">
+                            <hr>
+                            <div class="details-flex">
+                                <div>
+                                    <h4>Sender Information</h4>
+                                    <p><strong>Name:</strong> <span id="sender-name">John Doe</span></p>
+                                    <p><strong>Address:</strong> <span id="sender-address">123 Main St, Anytown, USA</span></p>
+                                    <p><strong>Phone:</strong> <span id="sender-phone">+1 (555) 123-4567</span></p>
+                                </div>
+                                <div>
+                                    <h4>Receiver Information</h4>
+                                    <p><strong>Name:</strong> <span id="receiver-name">Jane Smith</span></p>
+                                    <p><strong>Address:</strong> <span id="receiver-address">456 Oak Ave, Otherville, USA</span></p>
+                                    <p><strong>Phone:</strong> <span id="receiver-phone">+1 (555) 987-6543</span></p>
+                                </div>
+                                <div class="package-image-container">
+                                    <img src="https://via.placeholder.com/200x150?text=Package+Image" alt="Package Image">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sidebar-content">
+                    <!-- Map Widget -->
+                    <div class="layout-card">
+                        <h3>Current Location</h3>
+                        <div id="map">
+                            <p>Map Placeholder</p>
+                        </div>
+                    </div>
+
+                    <!-- Other Sidebar Widget (e.g., Contact Support) -->
+                    <div class="layout-card">
+                        <h3>Need Help?</h3>
+                        <p>If you have any questions about your shipment, please contact our support team.</p>
+                        <button class="btn btn-primary">Contact Support</button>
+                    </div>
+                </div>
+            </div>
         </section>
     </main>
 

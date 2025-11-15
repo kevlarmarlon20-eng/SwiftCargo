@@ -1,111 +1,126 @@
-document.addEventListener("DOMContentLoaded", () => {
-  /**
-   * A reusable helper function to handle form submissions via fetch.
-   * @param {HTMLFormElement} form - The form element being submitted.
-   * @param {string} url - The URL endpoint to post data to.
-   * @param {object} body - The request body to be sent as JSON.
-   * @param {HTMLElement} statusElement - The element to display form status messages.
-   * @param {function} onSuccess - A callback function to run on successful submission.
-   */
-  const handleFormSubmit = async (form, url, body, statusElement, onSuccess) => {
-    const submitButton = form.querySelector('button[type="submit"]');
-    const originalButtonText = submitButton.textContent;
+// Wait for the DOM to be fully loaded before running the script
+document.addEventListener('DOMContentLoaded', () => {
+  // Select the forms
+  const registerForm = document.getElementById('register-package-form');
+  const updateForm = document.getElementById('update-status-form');
 
-    // Disable button and show loading state
-    submitButton.disabled = true;
-    submitButton.textContent = "Processing...";
-    statusElement.textContent = "";
-    statusElement.className = "form-status";
+  // Select the status message elements (we'll add these to the HTML next)
+  const registerStatus = document.getElementById('register-form-status');
+  const updateStatus = document.getElementById('update-form-status');
 
-    try {
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      const result = await response.json();
-
-      if (response.ok) {
-        onSuccess(result); // Execute the success callback
-      } else {
-        statusElement.textContent = `Error: ${result.message}`;
-        statusElement.className = "form-status error";
-      }
-    } catch (error)
-    {
-      console.error(`Failed to submit form to ${url}:`, error);
-      statusElement.textContent = "An unexpected network error occurred.";
-      statusElement.className = "form-status error";
-    } finally {
-      // Re-enable button
-      submitButton.disabled = false;
-      submitButton.textContent = originalButtonText;
-    }
-  };
-
-  // --- Register Package Form Submission ---
-  const registerForm = document.getElementById("register-package-form");
+  // 1. Handle the "Register New Package" form submission
   if (registerForm) {
-    registerForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const statusElement = document.getElementById("register-form-status");
+    registerForm.addEventListener('submit', async (e) => {
+      e.preventDefault(); // Stop the form from submitting the traditional way
+      clearStatus(registerStatus); // Clear previous messages
 
-      // Collect form data
+      // Get the form data
       const formData = new FormData(registerForm);
-      const body = {
-        sender: {
-          name: formData.get("sender-name"),
-          address: formData.get("sender-address"),
-          phone: formData.get("sender-phone"),
-          email: formData.get("sender-email"),
-        },
-        receiver: {
-          name: formData.get("receiver-name"),
-          address: formData.get("receiver-address"),
-          phone: formData.get("receiver-phone"),
-          email: formData.get("receiver-email"),
-        },
-      };
+      // Convert FormData to a plain object
+      const data = Object.fromEntries(formData.entries());
 
-      // Define success behavior
-      const onSuccess = (result) => {
-        statusElement.textContent = `Success! New tracking number: ${result.trackingNumber}`;
-        statusElement.className = "form-status success";
-        registerForm.reset();
-      };
+      try {
+        const response = await fetch('/register-package', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data),
+        });
 
-      // Use the helper to handle the submission
-      await handleFormSubmit(registerForm, "/register-package", body, statusElement, onSuccess);
+        const result = await response.json();
+
+        if (response.ok) {
+          // Success!
+          showStatus(
+            registerStatus,
+            `Success! New Tracking ID: ${result.trackingNumber}`,
+            false
+          );
+          registerForm.reset(); // Clear the form fields
+        } else {
+          // Error from the server (e.g., 400, 404)
+          showStatus(registerStatus, `Error: ${result.message}`, true);
+        }
+      } catch (error) {
+        // Network error or other fetch error
+        console.error('Registration error:', error);
+        showStatus(
+          registerStatus,
+          'A network error occurred. Please try again.',
+          true
+        );
+      }
     });
   }
 
-  // --- Update Status Form Submission ---
-  const updateForm = document.getElementById("update-status-form");
+  // 2. Handle the "Update Package Status" form submission
   if (updateForm) {
-    updateForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const statusElement = document.getElementById("update-form-status");
+    updateForm.addEventListener('submit', async (e) => {
+      e.preventDefault(); // Stop the form from submitting
+      clearStatus(updateStatus); // Clear previous messages
 
-      // Collect form data
+      // Get and convert form data
       const formData = new FormData(updateForm);
-      const body = { trackingNumber: formData.get('update-tracking-number'), status: formData.get('update-status-text'), location: formData.get('update-location') };
+      const data = Object.fromEntries(formData.entries());
 
-      if (!body.trackingNumber || !body.status || !body.location) {
-        statusElement.textContent = "Please fill out all fields.";
-        statusElement.className = "form-status error";
-        return;
+      try {
+        const response = await fetch('/update-status', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data),
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          // Success!
+          showStatus(updateStatus, `Success: ${result.message}`, false);
+          updateForm.reset(); // Clear the form fields
+        } else {
+          // Error from the server
+          showStatus(updateStatus, `Error: ${result.message}`, true);
+        }
+      } catch (error) {
+        // Network error
+        console.error('Update error:', error);
+        showStatus(
+          updateStatus,
+          'A network error occurred. Please try again.',
+          true
+        );
       }
-
-      // Define success behavior
-      const onSuccess = (result) => {
-        statusElement.textContent = result.message;
-        statusElement.className = "form-status success";
-        updateForm.reset();
-      };
-
-      // Use the helper to handle the submission
-      await handleFormSubmit(updateForm, "/update-status", body, statusElement, onSuccess);
     });
+  }
+
+  // --- Helper Functions ---
+
+  /**
+   * Displays a status message (success or error)
+   * @param {HTMLElement} element - The status div to show the message in
+   * @param {string} message - The message to display
+   * @param {boolean} isError - True for error styling, false for success
+   */
+  function showStatus(element, message, isError) {
+    if (!element) return;
+    element.textContent = message;
+    element.className = 'form-status'; // Reset classes
+    if (isError) {
+      element.classList.add('error');
+    } else {
+      element.classList.add('success');
+    }
+  }
+
+  /**
+   * Clears any existing status message
+   * @param {HTMLElement} element - The status div to clear
+   */
+  function clearStatus(element) {
+    if (!element) return;
+    element.textContent = '';
+    element.className = 'form-status';
   }
 });

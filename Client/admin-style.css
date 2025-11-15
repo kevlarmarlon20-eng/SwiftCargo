@@ -1,0 +1,244 @@
+/* admin-style.css */
+
+/* Import variables from main style.css if possible, or redefine key ones */
+:root {
+    --clr-primary: #3498db;
+    --clr-primary-dark: #2980b9;
+    --clr-dark: #2c3e50;
+    --clr-dark-muted: #3f5870;
+    --clr-body: #333;
+    --clr-muted: #7f8c8d;
+    --clr-light: #f8f9fa;
+    --clr-white: #ffffff;
+    --clr-border: #ddd;
+    --clr-success: #28a745;
+    --clr-error: #dc3545;
+
+    --font-primary: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+
+    --spacing-xs: 5px;
+    --spacing-sm: 10px;
+    --spacing-md: 20px;
+    --spacing-lg: 30px;
+    --spacing-xl: 40px;
+
+    --border-radius-sm: 4px;
+    --border-radius-md: 8px;
+    --shadow-light: 0 5px 15px rgba(0, 0, 0, 0.05);
+    --shadow-std: 0 4px 12px rgba(0, 0, 0, 0.1);
+    --transition-std: all 0.3s ease-in-out;
+}
+
+/* Global Styles & Resets (similar to main style.css) */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-primary);
+    color: var(--clr-body);
+    line-height: 1.6;
+    background-color: var(--clr-light);
+    padding-bottom: var(--spacing-xl); /* Add some space at the bottom */
+}
+
+a {
+    text-decoration: none;
+    color: var(--clr-primary);
+}
+
+/* Header */
+header {
+    background-color: var(--clr-dark);
+    color: var(--clr-white);
+    padding: var(--spacing-md) var(--spacing-lg);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: var(--shadow-std);
+    margin-bottom: var(--spacing-xl);
+}
+
+header h1 {
+    font-size: 1.8rem;
+    color: var(--clr-primary);
+}
+
+header nav .nav-link {
+    color: var(--clr-white);
+    margin-left: var(--spacing-md);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--border-radius-sm);
+    transition: var(--transition-std);
+}
+
+header nav .nav-link:hover,
+header nav .nav-link.active {
+    background-color: var(--clr-primary);
+    color: var(--clr-white);
+}
+
+/* Main Container */
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-md);
+}
+
+/* Card Styles */
+.card {
+    background: var(--clr-white);
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius-md);
+    box-shadow: var(--shadow-light);
+    margin-bottom: var(--spacing-xl);
+}
+
+.card-title {
+    font-size: 1.5rem;
+    color: var(--clr-dark);
+    margin-bottom: var(--spacing-lg);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 1px solid var(--clr-border);
+    display: flex;
+    align-items: center;
+}
+
+.card-title i {
+    margin-right: var(--spacing-sm);
+    color: var(--clr-primary);
+}
+
+/* Form Styles */
+fieldset {
+    border: 1px solid var(--clr-border);
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+}
+
+legend {
+    font-weight: bold;
+    color: var(--clr-dark);
+    padding: 0 var(--spacing-xs);
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-md);
+}
+
+.form-group {
+    margin-bottom: var(--spacing-sm);
+}
+
+.form-group-full {
+    grid-column: 1 / -1; /* Spans all columns in the grid */
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: var(--spacing-xs);
+    font-weight: 500;
+    color: var(--clr-body);
+}
+
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="tel"],
+.form-group input[type="number"],
+.form-group input[type="date"],
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--clr-border);
+    border-radius: var(--border-radius-sm);
+    font-size: 1rem;
+    transition: border-color 0.2s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    border-color: var(--clr-primary);
+    outline: none;
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.form-actions {
+    margin-top: var(--spacing-lg);
+    text-align: right;
+}
+
+/* Buttons */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 12px 25px;
+    border: none;
+    border-radius: var(--border-radius-sm);
+    font-weight: bold;
+    text-align: center;
+    cursor: pointer;
+    transition: var(--transition-std);
+    background-color: var(--clr-primary);
+    color: var(--clr-white);
+}
+
+.btn i {
+    margin-right: var(--spacing-sm);
+}
+
+.btn:hover {
+    background-color: var(--clr-primary-dark);
+}
+
+.btn-secondary {
+    background-color: var(--clr-dark-muted);
+}
+
+.btn-secondary:hover {
+    background-color: var(--clr-dark);
+}
+
+/* Update Status Section Specifics */
+.update-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-md);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    header {
+        flex-direction: column;
+        text-align: center;
+    }
+    header nav {
+        margin-top: var(--spacing-md);
+    }
+    header nav .nav-link {
+        margin: 0 var(--spacing-sm);
+    }
+    .form-grid, .update-grid {
+        grid-template-columns: 1fr;
+    }
+    .form-group-full {
+        grid-column: auto;
+    }
+    .form-actions {
+        text-align: center;
+    }
+    .btn {
+        width: 100%;
+        justify-content: center;
+    }
+}

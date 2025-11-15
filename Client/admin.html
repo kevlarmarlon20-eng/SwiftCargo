@@ -8,121 +8,232 @@
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     />
-    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="admin-style.css" />
   </head>
   <body>
     <header>
-      <div class="container header-content">
-        <div class="logo">SwiftCargo Admin</div>
-        <nav>
-          <ul>
-            <li><a href="/">Main Site</a></li>
-          </ul>
-        </nav>
-      </div>
+      <h1>SwiftCargo Admin</h1>
+      <nav>
+        <a href="#" class="nav-link">Client Site</a>
+        <a href="#" class="nav-link active">Dashboard</a>
+      </nav>
     </header>
 
     <main class="container">
-      <!-- Register Package Section -->
-      <section id="register">
-        <div class="section-title">
-          <h2>Register a New Package</h2>
-          <p>Fill in the details below to create a new shipment.</p>
-        </div>
+      <section id="register-package" class="card">
+        <h2 class="card-title">
+          <i class="fas fa-plus-circle"></i> Register New Package
+        </h2>
 
-        <div class="register-content">
-          <form id="register-package-form">
-            <div class="form-row">
-              <div class="form-column">
-                <h3>Sender Details</h3>
-                <div class="form-group">
-                  <label for="sender-name">Name</label>
-                  <input type="text" id="sender-name" name="sender-name" required />
-                </div>
-                <div class="form-group">
-                  <label for="sender-address">Address</label>
-                  <input type="text" id="sender-address" name="sender-address" required />
-                </div>
-                <div class="form-group">
-                  <label for="sender-phone">Phone</label>
-                  <input type="tel" id="sender-phone" name="sender-phone" required />
-                </div>
-                <div class="form-group">
-                  <label for="sender-email">Email</label>
-                  <input type="email" id="sender-email" name="sender-email" required />
-                </div>
+        <form id="register-package-form">
+          <fieldset>
+            <legend>Sender Details</legend>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="sender-name">Sender Name</label>
+                <input
+                  type="text"
+                  id="sender-name"
+                  name="sender-name"
+                  placeholder="John Doe"
+                  required
+                />
               </div>
-
-              <div class="form-column">
-                <h3>Receiver Details</h3>
-                <div class="form-group">
-                  <label for="receiver-name">Name</label>
-                  <input type="text" id="receiver-name" name="receiver-name" required />
-                </div>
-                <div class="form-group">
-                  <label for="receiver-address">Address</label>
-                  <input type="text" id="receiver-address" name="receiver-address" required />
-                </div>
-                <div class="form-group">
-                  <label for="receiver-phone">Phone</label>
-                  <input type="tel" id="receiver-phone" name="receiver-phone" required />
-                </div>
-                <div class="form-group">
-                  <label for="receiver-email">Email</label>
-                  <input type="email" id="receiver-email" name="receiver-email" required />
-                </div>
+              <div class="form-group">
+                <label for="sender-email">Sender Email</label>
+                <input
+                  type="email"
+                  id="sender-email"
+                  name="sender-email"
+                  placeholder="john@example.com"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label for="sender-phone">Sender Phone</label>
+                <input
+                  type="tel"
+                  id="sender-phone"
+                  name="sender-phone"
+                  placeholder="+1 555-123-4567"
+                  required
+                />
+              </div>
+              <div class="form-group form-group-full">
+                <label for="sender-address">Sender Address</label>
+                <input
+                  type="text"
+                  id="sender-address"
+                  name="sender-address"
+                  placeholder="123 Shipper St, City, Country"
+                  required
+                />
               </div>
             </div>
+          </fieldset>
 
-            <div class="form-actions">
-              <button type="submit" class="btn">Register Package</button>
-              <div id="register-form-status" class="form-status"></div>
+          <fieldset>
+            <legend>Receiver Details</legend>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="receiver-name">Receiver Name</label>
+                <input
+                  type="text"
+                  id="receiver-name"
+                  name="receiver-name"
+                  placeholder="Jane Smith"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label for="receiver-email">Receiver Email</label>
+                <input
+                  type="email"
+                  id="receiver-email"
+                  name="receiver-email"
+                  placeholder="jane@example.com"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label for="receiver-phone">Receiver Phone</label>
+                <input
+                  type="tel"
+                  id="receiver-phone"
+                  name="receiver-phone"
+                  placeholder="+44 207-987-6543"
+                  required
+                />
+              </div>
+              <div class="form-group form-group-full">
+                <label for="receiver-address">Receiver Address</label>
+                <input
+                  type="text"
+                  id="receiver-address"
+                  name="receiver-address"
+                  placeholder="456 Consignee Ave, City, Country"
+                  required
+                />
+              </div>
             </div>
-          </form>
-        </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Package & Shipment Info</legend>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="origin">Origin</label>
+                <input
+                  type="text"
+                  id="origin"
+                  name="origin"
+                  placeholder="e.g., Shanghai, China"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label for="destination">Destination</label>
+                <input
+                  type="text"
+                  id="destination"
+                  name="destination"
+                  placeholder="e.g., London, UK"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label for="weight">Weight (kg)</label>
+                <input
+                  type="number"
+                  id="weight"
+                  name="weight"
+                  placeholder="e.g., 15.5"
+                  step="0.1"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label for="eta">Estimated Delivery Date (ETA)</label>
+                <input type="date" id="eta" name="eta" required />
+              </div>
+            </div>
+          </fieldset>
+
+          <div class="form-actions">
+            <button type="submit" class="btn">
+              <i class="fas fa-check-circle"></i> Register Package & Generate
+              Tracking ID
+            </button>
+
+            <div id="register-form-status" class="form-status"></div>
+          </div>
+        </form>
       </section>
 
-      <!-- Update Status Section -->
-      <section id="update-status">
-        <div class="section-title">
-          <h2>Update Tracking Status</h2>
-          <p>Update the status and location of an existing shipment.</p>
-        </div>
+      <section id="update-status" class="card">
+        <h2 class="card-title">
+          <i class="fas fa-edit"></i> Update Package Status
+        </h2>
 
-        <div class="contact-form">
-          <form id="update-status-form">
+        <form id="update-status-form">
+          <div class="update-grid">
+            <div class="form-group form-group-full">
+              <label for="tracking-number">Tracking Number</label>
+              <input
+                type="text"
+                id="tracking-number"
+                name="tracking-number"
+                placeholder="e.g., SC123456789"
+                required
+              />
+            </div>
+
             <div class="form-group">
-              <label for="update-tracking-number">Tracking Number</label>
-              <input type="text" id="update-tracking-number" name="update-tracking-number" required />
+              <label for="new-status">New Status</label>
+              <select id="new-status" name="new-status" required>
+                <option value="" disabled selected>-- Select Status --</option>
+                <option value="pending">Pending</option>
+                <option value="in-transit">In Transit</option>
+                <option value="out-for-delivery">Out for Delivery</option>
+                <option value="delivered">Delivered</option>
+                <option value="on-hold">On Hold</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
             </div>
+
             <div class="form-group">
-              <label for="update-status-text">New Status</label>
-              <input type="text" id="update-status-text" name="update-status-text" required />
+              <label for="location">Location</label>
+              <input
+                type="text"
+                id="location"
+                name="location"
+                placeholder="e.g., New York, USA"
+                required
+              />
             </div>
-            <div class="form-group">
-              <label for="update-location">New Location</label>
-              <input type="text" id="update-location" name="update-location" required />
+
+            <div class="form-group form-group-full">
+              <label for="update-description">Update Description</label>
+              <textarea
+                id="update-description"
+                name="update-description"
+                rows="4"
+                placeholder="e.g., Arrived at local sorting facility"
+                required
+              ></textarea>
             </div>
-            <div class="form-actions">
-              <button type="submit" class="btn">Update Status</button>
-              <div id="update-form-status" class="form-status"></div>
-            </div>
-          </form>
-        </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-secondary">
+              <i class="fas fa-sync-alt"></i> Update Status and Timeline
+            </button>
+
+            <div id="update-form-status" class="form-status"></div>
+          </div>
+        </form>
       </section>
     </main>
-
-    <footer>
-      <div class="container">
-        <div class="copyright">
-          <p>&copy; 2025 SwiftCargo Admin. All rights reserved.</p>
-        </div>
-      </div>
-    </footer>
 
     <script src="admin.js"></script>
   </body>
 </html>
-
-``` Next, here is the new `admin.js` file. It will handle the logic for both
-registering a package and updating its status. ```diff
