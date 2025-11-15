@@ -1,39 +1,205 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Track Results - SwiftCargo</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
     <header>
-        <nav>
-            <div class="logo">
-                <a href="index.html">SwiftCargo</a>
-            </div>
-            <ul>
-                <li><a href="index.html#services">Services</a></li>
-                <li><a href="index.html#about">About Us</a></li>
-                <li><a href="track.html">Track Package</a></li>
-                <li><a href="index.html#contact">Contact</a></li>
-            </ul>
-        </nav>
+      <nav>
+        <div class="logo">
+          <a href="index.html">SwiftCargo</a>
+        </div>
+        <ul>
+          <li><a href="index.html#services">Services</a></li>
+          <li><a href="index.html#about">About Us</a></li>
+          <li><a href="track.html">Track Package</a></li>
+          <li><a href="index.html#contact">Contact</a></li>
+        </ul>
+      </nav>
     </header>
 
     <main>
-        <section class="track-results-section">
-            <h1>Tracking Results</h1>
-            <div id="results-container">
-                <!-- Tracking information will be dynamically inserted here -->
+      <div class="track-results-container">
+        <a href="track.html" class="back-link">&larr; Back to Tracking</a>
+
+        <div id="results-container">
+          <div class="summary-box">
+            <div class="summary-header">
+              <span class="tracking-number" id="tracking-number-display"
+                >...</span
+              >
+              <div class="share-btn">Share</div>
             </div>
-        </section>
+            <div class="summary-status">
+              <span class="status-text"
+                >Status: <strong id="status-text-display">...</strong></span
+              >
+              <span class="delivery-date"
+                >Estimated Delivery:
+                <strong id="delivery-date-display">...</strong></span
+              >
+            </div>
+            <div class="progress-bar">
+              <div
+                class="progress"
+                id="progress-bar-inner"
+                style="width: 0%"
+              ></div>
+            </div>
+
+            <div class="summary-addresses">
+              <div>
+                <strong>Origin</strong>
+                <p id="origin-address">...</p>
+              </div>
+              <div>
+                <strong>Current Location</strong>
+                <p id="current-location">...</p>
+              </div>
+              <div>
+                <strong>Destination</strong>
+                <p id="destination-address">...</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="track-alert" id="tracking-alert" style="display: none">
+            <p id="alert-message"></p>
+            <a href="#" class="btn-details">Details</a>
+          </div>
+
+          <div class="tracking-layout">
+            <div class="main-content">
+              <div class="card">
+                <h3>Shipment Route</h3>
+                <div id="map"></div>
+              </div>
+
+              <div class="card shipment-timeline">
+                <h3>Shipment Timeline</h3>
+                <div id="timeline-container"></div>
+              </div>
+
+              <div class="card">
+                <h3>Package Details</h3>
+                <div class="package-details-grid">
+                  <div>
+                    <strong>Description:</strong>
+                    <span id="pkg-desc">...</span>
+                  </div>
+                  <div>
+                    <strong>Shipping Mode:</strong>
+                    <span id="pkg-mode">...</span>
+                  </div>
+                  <div>
+                    <strong>Weight:</strong> <span id="pkg-weight">...</span>
+                  </div>
+                  <div>
+                    <strong>Quantity:</strong> <span id="pkg-qty">...</span>
+                  </div>
+                  <div>
+                    <strong>Carrier:</strong> <span id="pkg-carrier">...</span>
+                  </div>
+                  <div>
+                    <strong>Ref Number:</strong>
+                    <span id="pkg-ref">...</span>
+                  </div>
+                </div>
+
+                <a
+                  href="javascript:void(0);"
+                  class="show-details-toggle"
+                  id="toggle-details-btn"
+                  >Show Additional Details &darr;</a
+                >
+                <div class="additional-details" id="additional-details-content">
+                  <hr />
+                  <div class="details-flex">
+                    <div>
+                      <strong>Payment Method:</strong>
+                      <span id="pkg-payment">...</span><br />
+                      <strong>Total Freight Cost:</strong>
+                      <span id="pkg-cost">...</span><br />
+                      <strong>Estimated Dispatch:</strong>
+                      <span id="pkg-dispatch">...</span>
+                    </div>
+                    <div class="package-image-container">
+                      <strong>Package Image:</strong>
+                      <img
+                        src="https://via.placeholder.com/200x150"
+                        alt="Package Image"
+                        id="pkg-image"
+                      />
+                    </div>
+                  </div>
+                  <button type="button" class="btn" id="print-receipt-btn">
+                    Print Receipt
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="sidebar-content">
+              <div class="card">
+                <h3>Track Another Shipment</h3>
+                <form id="track-another-form">
+                  <input
+                    type="text"
+                    placeholder="Enter tracking number"
+                    aria-label="Enter tracking number"
+                  />
+                  <button type="submit" class="btn">Track</button>
+                </form>
+              </div>
+
+              <div class="card receiver-info">
+                <h3>Receiver Information</h3>
+                <p>
+                  <strong>Name:</strong>
+                  <span id="receiver-name">...</span>
+                </p>
+                <p>
+                  <strong>Email:</strong>
+                  <span id="receiver-email">...</span>
+                </p>
+                <p>
+                  <strong>Address:</strong>
+                  <span id="receiver-address">...</span>
+                </p>
+              </div>
+
+              <div class="card sender-info">
+                <h3>Sender Information</h3>
+                <p>
+                  <strong>Name:</strong>
+                  <span id="sender-name">...</span>
+                </p>
+                <p>
+                  <strong>Email:</strong>
+                  <span id="sender-email">...</span>
+                </p>
+                <p>
+                  <strong>Address:</strong>
+                  <span id="sender-address">...</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </main>
 
     <footer>
-        <p>&copy; 2025 SwiftCargo. All Rights Reserved.</p>
+      <div class="footer-content">
+        <div class="copyright">
+          <p>&copy; 2025 SwiftCargo. All Rights Reserved.</p>
+        </div>
+      </div>
     </footer>
 
     <script src="track-result.js"></script>
-</body>
+  </body>
 </html>
