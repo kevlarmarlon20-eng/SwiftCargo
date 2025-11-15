@@ -236,7 +236,10 @@ header {
 nav ul {
   display: flex;
   gap: var(--spacing-sm);
+  justify-content: space-between;
+  align-items: center;
 }
+
 
 nav a {
   color: var(--clr-white);
