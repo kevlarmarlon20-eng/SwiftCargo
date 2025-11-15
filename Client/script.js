@@ -89,6 +89,13 @@ document.addEventListener("DOMContentLoaded", () => {
   if (trackingForm) {
     trackingForm.addEventListener('submit', e => {
       e.preventDefault();
+      
+      // Clear previous error messages
+      let errorContainer = document.querySelector('.error-container');
+      if (errorContainer) {
+        errorContainer.innerHTML = '';
+      }
+
       const trackingNumberInput = document.getElementById('Tracking-Number');
       const trackingNumber = trackingNumberInput.value.trim();
 
@@ -99,7 +106,6 @@ document.addEventListener("DOMContentLoaded", () => {
         )}`;
       } else {
         // If no tracking number is entered, display an error message
-        let errorContainer = document.querySelector('.error-container');
         if (!errorContainer) {
           errorContainer = document.createElement('div');
           errorContainer.className = 'error-container';

@@ -108,7 +108,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (!trackingNumber) {
     pageContainer.innerHTML =
-      '<p class="error" style="text-align: center; padding: 40px;">No tracking number provided. <a href="track.html">Go back</a>.</p>';
+      '<p class="error" style="text-align: center; padding: 40px;">No tracking number provided. <a href="index.html">Go back</a>.</p>';
     return;
   }
 
@@ -133,6 +133,6 @@ document.addEventListener("DOMContentLoaded", () => {
       // Error!
       document.getElementById("loading-message")?.remove();
       // Show the error message inside the main container
-      pageContainer.innerHTML = `<p class="error" style="text-align: center; padding: 40px;">${error.message} <a href="track.html">Try again</a>.</p>`;
+      pageContainer.innerHTML = `<p class="error" style="text-align: center; padding: 40px;">${error.message} <a href="index.html">Try again</a>.</p>`;
     });
 });
