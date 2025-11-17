@@ -178,6 +178,17 @@ app.post('/send-message', (req, res) => {
   res.status(200).json({ message: 'Message received successfully.' });
 });
 
+/**
+ * Endpoint for the contact form.
+ */
+app.post('/contact', (req, res) => {
+  const { name, email, message } = req.body;
+  console.log(`Received message from ${name} (${email}):`);
+  console.log(`Message: ${message}`);
+  // In a real app, you'd email this or save it.
+  res.status(200).json({ message: 'Message received successfully.' });
+});
+
 // --- Start Server ---
 
 app.listen(port, () => {

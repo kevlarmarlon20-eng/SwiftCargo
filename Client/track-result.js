@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const senderAddress = document.getElementById('sender-address');
   const senderEmail = document.getElementById('sender-email');
   const senderPhone = document.getElementById('sender-phone');
-  
+
   if (!trackingNumber) {
     showError('No tracking ID provided. Please go back and try again.');
     return;
@@ -32,17 +32,33 @@ document.addEventListener('DOMContentLoaded', () => {
   fetch(`/track/${trackingNumber}`)
     .then(response => {
       if (!response.ok) {
-        // If server sends a 404 or other error
-        return response.json().then(err => { throw new Error(err.message || 'Package not found.'); });
+        // Handle ALL non-OK responses first
+        if (response.status === 404) {
+          // This is the error we want to show the user
+          throw new Error('The tracking number you entered seems incorrect. Please check the number and try again.');
+        } else {
+          // For other server errors (500, etc.), try to get the server's message
+          // Use .json() which returns a promise, so chain the .then()
+          return response.json().then(err => { 
+            throw new Error(err.message || 'An unknown server error occurred.'); 
+          });
+        }
       }
+      // ONLY parse JSON if the response is OK (200-299)
       return response.json();
     })
     .then(data => {
+      // This block will ONLY run if the fetch was successful
+      
+      // Hide any previous error messages
+      trackingAlert.classList.add('hidden');
+      resultsContainer.classList.remove('hidden');
+
       // --- Data received successfully, now fill in the page ---
 
       // 1. Populate Summary Box
       trackingDisplay.textContent = data.trackingNumber;
-      statusDisplay.textContent = data.status ? `${data.status} in ${data.location}` : 'N/A';
+      statusDisplay.textContent = data.status ? `${capitalize(data.status)} in ${data.location}` : 'N/A';
 
       if (data.shipmentInfo && data.shipmentInfo.eta) {
         const etaDate = new Date(data.shipmentInfo.eta).toLocaleDateString('en-US', {
@@ -65,7 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // 4. Update Progress Bar
       updateProgressBar(data.status);
-      
+
       // 5. Build Timeline
       buildTimeline(data.history);
 
@@ -73,7 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
       initializeMap(data.location);
     })
     .catch(error => {
-      // Handle errors (like package not found)
+      // This single .catch() block will now handle ALL errors
       showError(error.message);
     });
 
@@ -81,8 +97,8 @@ document.addEventListener('DOMContentLoaded', () => {
   let marker;
 
   /**
-   * Initializes the Leaflet map
-   */
+    * Initializes the Leaflet map
+    */
   function initializeMap(initialLocation) {
     if (map) {
       map.remove();
@@ -92,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const defaultCoords = [39.8283, -98.5795];
 
     map = L.map('map').setView(defaultCoords, 4);
-    
+
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     }).addTo(map);
@@ -114,9 +130,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /**
-   * Placeholder for a geocoding service
-   * In a real app, you would use an API like OpenCage, Mapbox, or Google Maps Geocoding
-   */
+    * Placeholder for a geocoding service
+    * In a real app, you would use an API like OpenCage, Mapbox, or Google Maps Geocoding
+    */
   async function simulateGeocoding(locationName) {
     // This is a very simple and limited simulation.
     // A real implementation would handle various location formats.
@@ -136,7 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
       "Tokyo": [35.6895, 139.6917],
       "Sydney": [ -33.8688, 151.2093],
     };
-    
+
     // Attempt to find a match, even if it's partial (e.g., "Paris, Frace")
     const key = Object.keys(locations).find(k => locationName.includes(k));
 
@@ -144,21 +160,32 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /**
-   * Shows an error message and hides the main content
-   */
+    * Shows an error message and hides the main content
+    */
   function showError(message) {
-    resultsContainer.style.display = 'none';
-    trackingAlert.style.display = 'flex'; // Show the alert box
-    alertMessage.textContent = message;
+    resultsContainer.classList.add('hidden');
+    trackingAlert.classList.remove('hidden');
+    trackingAlert.classList.add('alert-error'); // Add the error class
+    alertMessage.textContent = message || 'An unknown error occurred.';
+  }
+  /**
+    * Capitalizes the first letter of each word in a string.
+    * @param {string} str The string to capitalize.
+    * @returns {string} The capitalized string.
+    */
+  function capitalize(str) {
+    if (!str) return '';
+    return str.replace(/\b\w/g, char => char.toUpperCase());
   }
 
+
   /**
-   * It builds the timeline, including the description
-   */
+    * It builds the timeline, including the description
+    */
   function buildTimeline(history) {
     // Clear any placeholder content
     timelineContainer.innerHTML = '';
-    
+
     if (!history || history.length === 0) {
       timelineContainer.innerHTML = '<p>No shipment history found.</p>';
       return;
@@ -167,43 +194,66 @@ document.addEventListener('DOMContentLoaded', () => {
     // Show most recent update first
     const reversedHistory = history.slice().reverse();
 
+    // Create a document fragment to build the timeline items
+    const fragment = document.createDocumentFragment();
+
     // Loop through each history item and create HTML for it
     reversedHistory.forEach(item => {
+      const timelineItem = document.createElement('div');
+      let itemClass = 'timeline-item';
+      if (item.status && item.status.toLowerCase() === 'on-hold') {
+        itemClass += ' timeline-item-on-hold';
+      }
+      timelineItem.className = itemClass;
+
       const itemHtml = `
-        <div class="timeline-item">
-          <div class="timeline-status">${item.status}</div>
-          
-          <div class="timeline-description">
-            ${item.description}
-          </div>
-          
-          <div class="timeline-date">
-            ${new Date(item.timestamp).toLocaleString('en-US', {
-              dateStyle: 'medium',
-              timeStyle: 'short',
-            })}
-            (at ${item.location})
-          </div>
+        <div class="timeline-status">${capitalize(item.status)}</div>
+        
+        <div class="timeline-description">
+          ${item.description}
+        </div>
+        
+        <div class="timeline-date">
+          ${new Date(item.timestamp).toLocaleString('en-US', {
+            dateStyle: 'medium',
+            timeStyle: 'short',
+          })}
+          (at ${item.location})
         </div>
       `;
-      // Add the new HTML to the container
-      timelineContainer.innerHTML += itemHtml;
+      timelineItem.innerHTML = itemHtml;
+      fragment.appendChild(timelineItem);
     });
+
+    // Add the new HTML to the container
+    timelineContainer.appendChild(fragment);
   }
-  
+
   /**
-   * Updates the progress bar based on status
-   */
+    * Updates the progress bar based on status
+    */
   function updateProgressBar(status) {
     let width = '10%'; // Default for 'Pending'
-    if (status === 'In Transit') width = '40%';
-    if (status === 'On Hold') width = '50%';
-    if (status === 'Out for Delivery') width = '70%';
-    if (status === 'Delivered') width = '100%';
-    
+    switch (status) {
+      case 'In-Transit':
+        width = '40%';
+        break;
+      case 'On-Hold':
+        width = '50%';
+        break;
+      case 'Out for Delivery':
+        width = '70%';
+        break;
+      case 'Delivered':
+        width = '100%';
+        break;
+      default:
+        width = '10%';
+        break;
+    }
     progressBar.style.width = width;
   }
-  
+
   // Add functionality to the "Track Another" form
   const trackAnotherForm = document.getElementById('track-another-form');
   if(trackAnotherForm) {

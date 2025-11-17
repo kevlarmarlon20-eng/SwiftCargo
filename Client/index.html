@@ -20,6 +20,11 @@
     <header>
       <div class="container header-content">
         <div class="logo">Swift<span>Cargo</span></div>
+
+        <button class="nav-toggle" aria-label="Open navigation">
+          <span class="icon-hamburger">☰</span>
+          <span class="icon-close">×</span>
+        </button>
         <nav>
           <ul>
             <li><a href="index.html" class="active">Home</a></li>
@@ -203,6 +208,63 @@
                 </div>
               </div>
             </div>
+            <div class="testimonial">
+              <p class="testimonial-text">
+                "The switch to SwiftCargo was seamless. Their team is proactive,
+                and the real-time tracking feature provides complete peace of
+                mind. I'd recommend them to anyone."
+              </p>
+              <div class="testimonial-author">
+                <div class="author-image">
+                  <img
+                    src="https://randomuser.me/api/portraits/women/44.jpg"
+                    alt="Client 2"
+                  />
+                </div>
+                <div>
+                  <strong>Sarah Chen</strong>
+                  <span>Logistics Coordinator, TechCorp</span>
+                </div>
+              </div>
+            </div>
+            <div class="testimonial">
+              <p class="testimonial-text">
+                "For our international shipments, SwiftCargo is our go-to
+                partner. They handle customs and complex logistics with
+                incredible professionalism. A truly global-class service."
+              </p>
+              <div class="testimonial-author">
+                <div class="author-image">
+                  <img
+                    src="https://randomuser.me/api/portraits/men/56.jpg"
+                    alt="Client 3"
+                  />
+                </div>
+                <div>
+                  <strong>David Rodriguez</strong>
+                  <span>Operations Director, Global Exports</span>
+                </div>
+              </div>
+            </div>
+            <div class="testimonial">
+              <p class="testimonial-text">
+                "What stands out is their customer-centric approach. They took
+                the time to understand our unique needs and tailored a solution
+                that has saved us both time and money."
+              </p>
+              <div class="testimonial-author">
+                <div class="author-image">
+                  <img
+                    src="https://randomuser.me/api/portraits/women/68.jpg"
+                    alt="Client 4"
+                  />
+                </div>
+                <div>
+                  <strong>Emily White</strong>
+                  <span>Founder, Artisan Goods Co.</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -217,6 +279,7 @@
         </div>
         <div class="contact-content">
           <form class="contact-form">
+            <div id="form-status"></div>
             <div class="form-group">
               <label for="name">Name</label>
               <input type="text" id="name" name="name" required />
@@ -270,11 +333,15 @@
           </div>
         </div>
         <div class="copyright">
-          <p>&copy; 2025 SwiftCargo. All rights reserved.</p>
+          <p>
+            &copy; <span id="current-year"></span> SwiftCargo. All rights
+            reserved.
+          </p>
         </div>
       </div>
     </footer>
 
     <script src="script.js"></script>
+    <script src="contact.js"></script>
   </body>
 </html>

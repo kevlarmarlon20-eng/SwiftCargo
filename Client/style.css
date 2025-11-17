@@ -11,8 +11,8 @@
  */
 
 /* =======================================
-   1. ROOT & VARIABLES
-   ======================================= */
+    1. ROOT & VARIABLES
+    ======================================= */
 :root {
   /* Colors */
   --clr-primary: #007bff; /* A professional, vibrant blue */
@@ -53,8 +53,8 @@
 }
 
 /* =======================================
-   2. GLOBAL STYLES & RESETS
-   ======================================= */
+    2. GLOBAL STYLES & RESETS
+    ======================================= */
 *,
 *::before,
 *::after {
@@ -73,6 +73,11 @@ body {
   color: var(--clr-body);
   line-height: 1.6;
   background-color: var(--clr-white);
+}
+
+/* ADDED: Prevent scrolling when mobile nav is open */
+body.nav-is-open {
+  overflow: hidden;
 }
 
 img,
@@ -109,8 +114,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* =======================================
-   3. UTILITY & COMPONENT CLASSES
-   ======================================= */
+    3. UTILITY & COMPONENT CLASSES
+    ======================================= */
 .container {
   max-width: var(--container-width);
   margin-left: auto;
@@ -166,9 +171,46 @@ h1, h2, h3, h4, h5, h6 {
   font-size: 1.125rem; /* 18px */
 }
 
+.hidden {
+  display: none !important;
+}
+
+.tracking-alert {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  margin-top: var(--spacing-xl);
+  border-radius: var(--border-radius);
+  font-size: 1.1rem;
+  box-shadow: var(--shadow-md);
+}
+
+.tracking-alert.alert-error {
+  background-color: #f8d7da; /* Light red */
+  color: #721c24; /* Dark red */
+  border: 1px solid #f5c6cb; /* Red border */
+}
+
+.tracking-alert.alert-success {
+  background-color: #d4edda; /* Light green */
+  color: #155724; /* Dark green */
+  border: 1px solid #c3e6cb; /* Green border */
+}
+
+.tracking-alert-icon {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.tracking-alert p {
+  margin: 0;
+  font-weight: 600;
+}
+
 /* =======================================
-   4. LAYOUT & STRUCTURE
-   ======================================= */
+    4. LAYOUT & STRUCTURE
+    ======================================= */
 header {
   background-color: var(--clr-white);
   padding: var(--spacing-md) 0;
@@ -211,6 +253,42 @@ nav a.active {
   color: var(--clr-primary);
   border-bottom-color: var(--clr-primary);
 }
+
+/* --- ADDED: Navigation Toggle (Hamburger Menu) --- */
+.nav-toggle {
+  display: none; /* Hidden on desktop */
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 2.25rem; /* 36px */
+  color: var(--clr-dark);
+  z-index: 1001; /* Above the nav menu */
+  padding: 0;
+  line-height: 1;
+}
+
+.nav-toggle .icon-close {
+  display: none;
+}
+
+/* This class is toggled by JS on the <body> */
+.nav-is-open .nav-toggle {
+  /* Fix button position when menu is open */
+  position: fixed;
+  top: var(--spacing-md);
+  right: var(--spacing-lg);
+}
+
+.nav-is-open .nav-toggle .icon-hamburger {
+  display: none;
+}
+
+.nav-is-open .nav-toggle .icon-close {
+  display: block;
+  font-size: 2.5rem; /* Make the 'X' a bit bigger */
+}
+/* --- END ADDED --- */
+
 
 main > section {
   padding: var(--spacing-xxl) 0;
@@ -262,8 +340,8 @@ footer {
 }
 
 /* =======================================
-   5. HOMEPAGE: SECTION STYLES
-   ======================================= */
+    5. HOMEPAGE: SECTION STYLES
+    ======================================= */
 
 /* --- Hero Section --- */
 .hero {
@@ -565,21 +643,65 @@ footer {
 }
 
 /* =======================================
-   6. RESPONSIVE DESIGN
-   ======================================= */
+    6. RESPONSIVE DESIGN
+    ======================================= */
+
+/* --- REPLACED: This block is new --- */
 @media (max-width: 992px) {
-    .header-content {
-        flex-direction: column;
-        gap: var(--spacing-lg);
-    }
-    nav ul {
-        justify-content: center;
-        flex-wrap: wrap;
-    }
-    .hero h1 {
-        font-size: 2.75rem;
-    }
+  /* --- Mobile Header & Navigation --- */
+  .nav-toggle {
+    display: block; /* Show the hamburger button */
+  }
+
+  nav {
+    /* Make it a full-screen modal */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh; /* Full viewport height */
+    background-color: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px); /* Modern blur effect */
+    
+    /* Center the links */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    /* Hide it by default */
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-100%);
+    transition: var(--transition-std);
+  }
+
+  /* Show the nav when body has the .nav-is-open class */
+  .nav-is-open nav {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+
+  nav ul {
+    flex-direction: column; /* Stack links vertically */
+    gap: var(--spacing-xl);
+    text-align: center;
+    /* Remove old/conflicting styles */
+    justify-content: center;
+    flex-wrap: unset; /* IMPORTANT: Undo your old wrap */
+  }
+
+  nav a {
+    font-size: 1.75rem; /* Make links much bigger for tapping */
+  }
+  
+  /* --- Other 992px Styles (from your original file) --- */
+  .hero h1 {
+      font-size: 2.75rem;
+  }
 }
+/* --- END REPLACED BLOCK --- */
+
 
 @media (max-width: 768px) {
   html {
