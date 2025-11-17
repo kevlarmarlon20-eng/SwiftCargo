@@ -8,9 +8,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const statusDisplay = document.getElementById('status-text-display');
   const deliveryDateDisplay = document.getElementById('delivery-date-display');
   const progressBar = document.getElementById('progress-bar-inner');
-  const originAddress = document.getElementById('origin-address');
-  const currentLocation = document.getElementById('current-location');
-  const destinationAddress = document.getElementById('destination-address');
   const timelineContainer = document.getElementById('timeline-container');
   const resultsContainer = document.getElementById('results-container');
   const trackingAlert = document.getElementById('tracking-alert');
@@ -18,17 +15,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Receiver & Sender details
   const receiverName = document.getElementById('receiver-name');
-  const receiverEmail = document.getElementById('receiver-email');
   const receiverAddress = document.getElementById('receiver-address');
+  const receiverEmail = document.getElementById('receiver-email');
+  const receiverPhone = document.getElementById('receiver-phone');
   const senderName = document.getElementById('sender-name');
-  const senderEmail = document.getElementById('sender-email');
   const senderAddress = document.getElementById('sender-address');
-
-  // Package details
-  // const pkgWeight = document.getElementById('pkg-weight');
-  // (You can add the other pkg- IDs here if you want to populate them)
-  // const pkgDesc = document.getElementById('pkg-desc');
-  // const pkgMode = document.getElementById('pkg-mode');
+  const senderEmail = document.getElementById('sender-email');
+  const senderPhone = document.getElementById('sender-phone');
   
   if (!trackingNumber) {
     showError('No tracking ID provided. Please go back and try again.');
@@ -60,32 +53,20 @@ document.addEventListener('DOMContentLoaded', () => {
         deliveryDateDisplay.textContent = 'N/A';
       }
 
-      originAddress.textContent = data.shipmentInfo?.origin || 'N/A';
-      currentLocation.textContent = data.location || 'N/A';
-      destinationAddress.textContent = data.shipmentInfo?.destination || 'N/A';
-
       // 2. Populate Sender/Receiver
       receiverName.textContent = data.receiver?.name || 'N/A';
-      receiverEmail.textContent = data.receiver?.email || 'N/A';
       receiverAddress.textContent = data.receiver?.address || 'N/A';
+      receiverEmail.textContent = data.receiver?.email || 'N/A';
+      receiverPhone.textContent = data.receiver?.phone || 'N/A';
       senderName.textContent = data.sender?.name || 'N/A';
-      senderEmail.textContent = data.sender?.email || 'N/A';
       senderAddress.textContent = data.sender?.address || 'N/A';
-
-      // 3. Populate Package Details
-      // if (data.shipmentInfo && data.shipmentInfo.weight) {
-      //   pkgWeight.textContent = `${data.shipmentInfo.weight} kg`;
-      // } else {
-      //   pkgWeight.textContent = 'N/A';
-      // }
-      // (Populate other package details here)
-      // pkgDesc.textContent = "Your description field"; 
-      // pkgMode.textContent = "Your shipping mode field";
+      senderEmail.textContent = data.sender?.email || 'N/A';
+      senderPhone.textContent = data.sender?.phone || 'N/A';
 
       // 4. Update Progress Bar
       updateProgressBar(data.status);
       
-      // 5. Build Timeline (THE IMPORTANT FIX)
+      // 5. Build Timeline
       buildTimeline(data.history);
 
       // 6. Initialize and Update Map
@@ -109,7 +90,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Default coordinates (e.g., center of the US) if no location is available
     const defaultCoords = [39.8283, -98.5795];
-    let initialCoords = defaultCoords;
+
+    map = L.map('map').setView(defaultCoords, 4);
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
 
     if (initialLocation) {
       // We'll need to geocode the location name to get coordinates
@@ -125,12 +111,6 @@ document.addEventListener('DOMContentLoaded', () => {
         marker.bindPopup(`<b>Current Location:</b><br>${initialLocation}`).openPopup();
       });
     }
-
-    map = L.map('map').setView(initialCoords, 4);
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(map);
   }
 
   /**
@@ -157,7 +137,10 @@ document.addEventListener('DOMContentLoaded', () => {
       "Sydney": [ -33.8688, 151.2093],
     };
     
-    return locations[locationName] || [39.8283, -98.5795]; // Return default if not found
+    // Attempt to find a match, even if it's partial (e.g., "Paris, Frace")
+    const key = Object.keys(locations).find(k => locationName.includes(k));
+
+    return locations[key] || [39.8283, -98.5795]; // Return default if not found
   }
 
   /**
@@ -170,7 +153,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /**
-   * THIS IS THE NEW FUNCTION
    * It builds the timeline, including the description
    */
   function buildTimeline(history) {

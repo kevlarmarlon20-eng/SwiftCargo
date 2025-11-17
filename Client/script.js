@@ -96,7 +96,7 @@ document.addEventListener("DOMContentLoaded", () => {
         errorContainer.innerHTML = '';
       }
 
-      const trackingNumberInput = document.getElementById('Tracking-Number');
+      const trackingNumberInput = document.getElementById('tracking-number-hero');
       const trackingNumber = trackingNumberInput.value.trim();
 
       if (trackingNumber) {
