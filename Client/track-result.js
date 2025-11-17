@@ -1,138 +1,237 @@
-// This function now makes a real fetch request to your backend API.
-async function fetchTrackingData(trackingNumber) {
-  const response = await fetch(`/track/${trackingNumber}`);
+document.addEventListener('DOMContentLoaded', () => {
+  // Get tracking number from URL (e.g., .../track-result.html?id=SC12345)
+  const urlParams = new URLSearchParams(window.location.search);
+  const trackingNumber = urlParams.get('id');
 
-  if (!response.ok) {
-    // If the server returns a 404 or other error, handle it.
-    const errorResult = await response.json();
-    throw new Error(errorResult.message || "Failed to fetch tracking data.");
-  }
+  // --- Select all the elements from your HTML ---
+  const trackingDisplay = document.getElementById('tracking-number-display');
+  const statusDisplay = document.getElementById('status-text-display');
+  const deliveryDateDisplay = document.getElementById('delivery-date-display');
+  const progressBar = document.getElementById('progress-bar-inner');
+  const originAddress = document.getElementById('origin-address');
+  const currentLocation = document.getElementById('current-location');
+  const destinationAddress = document.getElementById('destination-address');
+  const timelineContainer = document.getElementById('timeline-container');
+  const resultsContainer = document.getElementById('results-container');
+  const trackingAlert = document.getElementById('tracking-alert');
+  const alertMessage = document.getElementById('alert-message');
 
-  return response.json();
-}
+  // Receiver & Sender details
+  const receiverName = document.getElementById('receiver-name');
+  const receiverEmail = document.getElementById('receiver-email');
+  const receiverAddress = document.getElementById('receiver-address');
+  const senderName = document.getElementById('sender-name');
+  const senderEmail = document.getElementById('sender-email');
+  const senderAddress = document.getElementById('sender-address');
 
-// This function is updated to populate the page with data from your actual server.
-function populateTrackingData(data, trackingNumber) {
-  // 1. Populate Summary Box
-  document.getElementById("tracking-number-display").textContent = trackingNumber;
-  document.getElementById("status-text-display").textContent = data.status;
-  document.getElementById("current-location").textContent = data.location;
-
-  // Use receiver's address as the destination
-  if (data.receiver && data.receiver.address) {
-    document.getElementById("destination-address").textContent = data.receiver.address;
-  } else {
-    document.getElementById("destination-address").textContent = "Not available";
-  }
-
-  // Hide elements for which the server doesn't provide data
-  document.getElementById("delivery-date-display").parentElement.style.display = "none";
-  document.querySelector(".progress-bar").style.display = "none";
-  document.querySelector(".share-btn").style.display = "none";
-  document.getElementById("tracking-alert").style.display = "none";
-
-  // 2. Populate Shipment Timeline
-  const timelineContainer = document.getElementById("timeline-container");
-  timelineContainer.innerHTML = ""; // Clear placeholder
-
-  if (data.history && data.history.length > 0) {
-    // Set origin address from the first history event
-    document.getElementById("origin-address").textContent = data.history[0].location;
-
-    data.history.reverse().forEach((item) => {
-      const timelineItem = document.createElement("div");
-      timelineItem.className = "timeline-item";
-
-      // Format the timestamp
-      const itemDate = new Date(item.timestamp).toLocaleString();
-
-      timelineItem.innerHTML = `
-        <span class="timeline-status">${item.status}</span>
-        <span class="timeline-location">${item.location}</span>
-        <span class="timeline-date">${itemDate}</span>
-      `;
-      timelineContainer.appendChild(timelineItem);
-    });
-  } else {
-    timelineContainer.innerHTML = "<p>No history available.</p>";
-    document.getElementById("origin-address").textContent = "Not available";
-  }
-
-  // 3. Hide the entire "Package Details" card as the server doesn't provide this.
-  // A more robust solution would be to check for each field, but this is cleaner for now.
-  const packageDetailsCard = document.querySelector(".package-details-grid").closest(".card");
-  if (packageDetailsCard) {
-    packageDetailsCard.style.display = "none";
-  }
+  // Package details
+  // const pkgWeight = document.getElementById('pkg-weight');
+  // (You can add the other pkg- IDs here if you want to populate them)
+  // const pkgDesc = document.getElementById('pkg-desc');
+  // const pkgMode = document.getElementById('pkg-mode');
   
-  // Also hide the map, as there's no map integration yet.
-  const mapCard = document.getElementById("map").closest(".card");
-  if (mapCard) {
-    mapCard.style.display = "none";
-  }
-
-
-  // 4. Populate Sidebar with Sender/Receiver Info
-  if (data.receiver) {
-    document.getElementById("receiver-name").textContent = data.receiver.name || "N/A";
-    document.getElementById("receiver-email").textContent = data.receiver.email || "N/A";
-    document.getElementById("receiver-address").textContent = data.receiver.address || "N/A";
-  }
-  if (data.sender) {
-    document.getElementById("sender-name").textContent = data.sender.name || "N/A";
-    document.getElementById("sender-email").textContent = data.sender.email || "N/A";
-    document.getElementById("sender-address").textContent = data.sender.address || "N/A";
-  }
-}
-
-// Main script execution starts here
-document.addEventListener("DOMContentLoaded", () => {
-  const resultsContainer = document.getElementById("results-container");
-  const pageContainer = document.querySelector(".track-results-container");
-  const params = new URLSearchParams(window.location.search);
-  const trackingNumber = params.get("trackingNumber");
-
-  // Handle the "Track Another Shipment" form in the sidebar
-  const trackAnotherForm = document.getElementById("track-another-form");
-  if (trackAnotherForm) {
-    trackAnotherForm.addEventListener("submit", (e) => {
-      e.preventDefault();
-      const input = trackAnotherForm.querySelector("input");
-      if (input && input.value) {
-        window.location.href = `track-result.html?trackingNumber=${input.value.trim()}`;
-      }
-    });
-  }
-
-  // --- Main Tracking Logic ---
-
   if (!trackingNumber) {
-    pageContainer.innerHTML =
-      '<p class="error" style="text-align: center; padding: 40px;">No tracking number provided. <a href="index.html">Go back</a>.</p>';
+    showError('No tracking ID provided. Please go back and try again.');
     return;
   }
 
-  // Hide results and show a loading message
-  resultsContainer.style.display = "none";
-  const loadingMessage = document.createElement("p");
-  loadingMessage.id = "loading-message";
-  loadingMessage.textContent = `Searching for tracking number: ${trackingNumber}...`;
-  loadingMessage.style.textAlign = "center";
-  loadingMessage.style.padding = "40px";
-  pageContainer.appendChild(loadingMessage);
-
-  // Call the fetch function
-  fetchTrackingData(trackingNumber)
-    .then((data) => {
-      // Success!
-      document.getElementById("loading-message")?.remove();
-      populateTrackingData(data, trackingNumber); // Populate all the fields
-      resultsContainer.style.display = "block"; // Show the results
+  // Fetch the package data from the server
+  fetch(`/track/${trackingNumber}`)
+    .then(response => {
+      if (!response.ok) {
+        // If server sends a 404 or other error
+        return response.json().then(err => { throw new Error(err.message || 'Package not found.'); });
+      }
+      return response.json();
     })
-    .catch((error) => {
-      // Error!
-      document.getElementById("loading-message")?.remove();
-      // Show the error message inside the main container
-      pageContainer.innerHTML = `<p class="error" style="text-align: center; padding: 40px;">${error.message} <a href="index.html">Try again</a>.</p>`;
+    .then(data => {
+      // --- Data received successfully, now fill in the page ---
+
+      // 1. Populate Summary Box
+      trackingDisplay.textContent = data.trackingNumber;
+      statusDisplay.textContent = data.status ? `${data.status} in ${data.location}` : 'N/A';
+
+      if (data.shipmentInfo && data.shipmentInfo.eta) {
+        const etaDate = new Date(data.shipmentInfo.eta).toLocaleDateString('en-US', {
+          year: 'numeric', month: 'long', day: 'numeric',
+        });
+        deliveryDateDisplay.textContent = etaDate;
+      } else {
+        deliveryDateDisplay.textContent = 'N/A';
+      }
+
+      originAddress.textContent = data.shipmentInfo?.origin || 'N/A';
+      currentLocation.textContent = data.location || 'N/A';
+      destinationAddress.textContent = data.shipmentInfo?.destination || 'N/A';
+
+      // 2. Populate Sender/Receiver
+      receiverName.textContent = data.receiver?.name || 'N/A';
+      receiverEmail.textContent = data.receiver?.email || 'N/A';
+      receiverAddress.textContent = data.receiver?.address || 'N/A';
+      senderName.textContent = data.sender?.name || 'N/A';
+      senderEmail.textContent = data.sender?.email || 'N/A';
+      senderAddress.textContent = data.sender?.address || 'N/A';
+
+      // 3. Populate Package Details
+      // if (data.shipmentInfo && data.shipmentInfo.weight) {
+      //   pkgWeight.textContent = `${data.shipmentInfo.weight} kg`;
+      // } else {
+      //   pkgWeight.textContent = 'N/A';
+      // }
+      // (Populate other package details here)
+      // pkgDesc.textContent = "Your description field"; 
+      // pkgMode.textContent = "Your shipping mode field";
+
+      // 4. Update Progress Bar
+      updateProgressBar(data.status);
+      
+      // 5. Build Timeline (THE IMPORTANT FIX)
+      buildTimeline(data.history);
+
+      // 6. Initialize and Update Map
+      initializeMap(data.location);
+    })
+    .catch(error => {
+      // Handle errors (like package not found)
+      showError(error.message);
     });
+
+  let map;
+  let marker;
+
+  /**
+   * Initializes the Leaflet map
+   */
+  function initializeMap(initialLocation) {
+    if (map) {
+      map.remove();
+    }
+
+    // Default coordinates (e.g., center of the US) if no location is available
+    const defaultCoords = [39.8283, -98.5795];
+    let initialCoords = defaultCoords;
+
+    if (initialLocation) {
+      // We'll need to geocode the location name to get coordinates
+      // For now, let's simulate it. Replace with a real geocoding API.
+      // Note: This is a placeholder. You'll need a geocoding service.
+      simulateGeocoding(initialLocation).then(coords => {
+        map.setView(coords, 10);
+        if (marker) {
+          marker.setLatLng(coords);
+        } else {
+          marker = L.marker(coords).addTo(map);
+        }
+        marker.bindPopup(`<b>Current Location:</b><br>${initialLocation}`).openPopup();
+      });
+    }
+
+    map = L.map('map').setView(initialCoords, 4);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+  }
+
+  /**
+   * Placeholder for a geocoding service
+   * In a real app, you would use an API like OpenCage, Mapbox, or Google Maps Geocoding
+   */
+  async function simulateGeocoding(locationName) {
+    // This is a very simple and limited simulation.
+    // A real implementation would handle various location formats.
+    const locations = {
+      "New York, NY": [40.7128, -74.0060],
+      "Los Angeles, CA": [34.0522, -118.2437],
+      "Chicago, IL": [41.8781, -87.6298],
+      "Houston, TX": [29.7604, -95.3698],
+      "Phoenix, AZ": [33.4484, -112.0740],
+      "Philadelphia, PA": [39.9526, -75.1652],
+      "San Antonio, TX": [29.4241, -98.4936],
+      "San Diego, CA": [32.7157, -117.1611],
+      "Dallas, TX": [32.7767, -96.7970],
+      "San Jose, CA": [37.3382, -121.8863],
+      "London": [51.5074, -0.1278],
+      "Paris": [48.8566, 2.3522],
+      "Tokyo": [35.6895, 139.6917],
+      "Sydney": [ -33.8688, 151.2093],
+    };
+    
+    return locations[locationName] || [39.8283, -98.5795]; // Return default if not found
+  }
+
+  /**
+   * Shows an error message and hides the main content
+   */
+  function showError(message) {
+    resultsContainer.style.display = 'none';
+    trackingAlert.style.display = 'flex'; // Show the alert box
+    alertMessage.textContent = message;
+  }
+
+  /**
+   * THIS IS THE NEW FUNCTION
+   * It builds the timeline, including the description
+   */
+  function buildTimeline(history) {
+    // Clear any placeholder content
+    timelineContainer.innerHTML = '';
+    
+    if (!history || history.length === 0) {
+      timelineContainer.innerHTML = '<p>No shipment history found.</p>';
+      return;
+    }
+
+    // Show most recent update first
+    const reversedHistory = history.slice().reverse();
+
+    // Loop through each history item and create HTML for it
+    reversedHistory.forEach(item => {
+      const itemHtml = `
+        <div class="timeline-item">
+          <div class="timeline-status">${item.status}</div>
+          
+          <div class="timeline-description">
+            ${item.description}
+          </div>
+          
+          <div class="timeline-date">
+            ${new Date(item.timestamp).toLocaleString('en-US', {
+              dateStyle: 'medium',
+              timeStyle: 'short',
+            })}
+            (at ${item.location})
+          </div>
+        </div>
+      `;
+      // Add the new HTML to the container
+      timelineContainer.innerHTML += itemHtml;
+    });
+  }
+  
+  /**
+   * Updates the progress bar based on status
+   */
+  function updateProgressBar(status) {
+    let width = '10%'; // Default for 'Pending'
+    if (status === 'In Transit') width = '40%';
+    if (status === 'On Hold') width = '50%';
+    if (status === 'Out for Delivery') width = '70%';
+    if (status === 'Delivered') width = '100%';
+    
+    progressBar.style.width = width;
+  }
+  
+  // Add functionality to the "Track Another" form
+  const trackAnotherForm = document.getElementById('track-another-form');
+  if(trackAnotherForm) {
+    trackAnotherForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const newTrackingId = e.target.querySelector('input').value;
+      if (newTrackingId) {
+        // Reload the page with the new tracking ID
+        window.location.href = `track-result.html?id=${newTrackingId}`;
+      }
+    });
+  }
 });

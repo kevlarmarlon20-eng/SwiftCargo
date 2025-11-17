@@ -101,7 +101,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (trackingNumber) {
         // Redirect to the tracking result page
-        window.location.href = `track-result.html?trackingNumber=${encodeURIComponent(
+        window.location.href = `track-result.html?id=${encodeURIComponent(
           trackingNumber
         )}`;
       } else {
