@@ -154,7 +154,30 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /**
-    * Geocodes a location name using the free Nominatim API.
+    * Predefined cache of common shipping hub locations (fallback for bad geocoding).
+    * Used as last resort if Nominatim fails.
+    */
+  const locationCache = {
+    'london': [51.5074, -0.1278],
+    'paris': [48.8566, 2.3522],
+    'new york': [40.7128, -74.0060],
+    'tokyo': [35.6762, 139.6503],
+    'singapore': [1.3521, 103.8198],
+    'dubai': [25.2048, 55.2708],
+    'shanghai': [31.2304, 121.4737],
+    'hong kong': [22.3193, 114.1694],
+    'amsterdam': [52.3676, 4.9041],
+    'frankfurt': [50.1109, 8.6821],
+    'los angeles': [34.0522, -118.2437],
+    'chicago': [41.8781, -87.6298],
+    'toronto': [43.6532, -79.3832],
+    'sydney': [33.8688, 151.2093],
+    'mumbai': [19.0760, 72.8777],
+    'bangkok': [13.7563, 100.5018],
+  };
+
+  /**
+    * Geocodes a location name using the free Nominatim API with fallback strategies.
     * @param {string} locationName - The name of the location to geocode.
     * @returns {Promise<[number, number]>} A promise that resolves to [lat, lon].
     */
@@ -162,7 +185,58 @@ document.addEventListener('DOMContentLoaded', () => {
     const defaultCoords = [39.8283, -98.5795]; // Center of US
     if (!locationName) return defaultCoords;
 
-    const endpoint = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(locationName)}`;
+    // Normalize the location name for cache lookup
+    const normalizedName = locationName.toLowerCase().trim();
+
+    // Step 1: Check cache first for exact or partial matches
+    const cacheKey = Object.keys(locationCache).find(key => 
+      normalizedName.includes(key) || key.includes(normalizedName)
+    );
+    if (cacheKey) {
+      console.log(`Found location in cache: ${cacheKey} for "${locationName}"`);
+      return locationCache[cacheKey];
+    }
+
+    // Step 2: Try the full location name
+    let coords = await tryGeocoding(locationName);
+    if (coords) return coords;
+
+    // Step 3: Extract city (last comma-separated segment or last word)
+    const parts = locationName.split(',').map(p => p.trim());
+    if (parts.length > 1) {
+      const city = parts[parts.length - 1]; // Last part (usually city)
+      coords = await tryGeocoding(city);
+      if (coords) return coords;
+
+      // Also try second-to-last part (country)
+      if (parts.length > 2) {
+        const country = parts[parts.length - 2];
+        coords = await tryGeocoding(country);
+        if (coords) return coords;
+      }
+    }
+
+    // Step 4: Try just the first word (in case of typos)
+    const firstWord = locationName.split(/[\s,]+/)[0];
+    if (firstWord && firstWord !== locationName) {
+      coords = await tryGeocoding(firstWord);
+      if (coords) return coords;
+    }
+
+    // Step 5: If all else fails, return default
+    console.warn(`Geocoding failed for: ${locationName}. Using default center.`);
+    return defaultCoords;
+  }
+
+  /**
+    * Helper function to attempt geocoding with Nominatim API.
+    * @param {string} query - The location query string.
+    * @returns {Promise<[number, number]|null>} Coordinates if found, null otherwise.
+    */
+  async function tryGeocoding(query) {
+    if (!query) return null;
+
+    const endpoint = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`;
 
     try {
       const response = await fetch(endpoint, {
@@ -170,22 +244,18 @@ document.addEventListener('DOMContentLoaded', () => {
           'Accept': 'application/json'
         }
       });
-      if (!response.ok) {
-        throw new Error(`Geocoding API returned status ${response.status}`);
-      }
-      const data = await response.json();
+      if (!response.ok) return null;
 
+      const data = await response.json();
       if (data && data.length > 0) {
-        // Return the coordinates of the first result
-        return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
-      } else {
-        // No results found
-        console.warn(`Geocoding failed for: ${locationName}. No results found.`);
-        return defaultCoords;
+        const result = [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+        console.log(`Geocoding success for "${query}":`, result);
+        return result;
       }
+      return null;
     } catch (error) {
-      console.error(`Error during geocoding for "${locationName}":`, error);
-      return defaultCoords; // Return default on error
+      console.error(`Geocoding error for "${query}":`, error);
+      return null;
     }
   }
 

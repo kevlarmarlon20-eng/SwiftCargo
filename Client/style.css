@@ -805,3 +805,89 @@ footer {
   }
 
 }
+/* =======================================
+   7. Responsive Enhancements (cross-browser)
+   ======================================= */
+
+/* Responsive root font sizing */
+html {
+  font-size: clamp(14px, 1.4vw, 16px);
+}
+
+/* Make container padding responsive and reduce on small screens */
+.container {
+  padding-left: clamp(0.75rem, 3vw, var(--spacing-lg));
+  padding-right: clamp(0.75rem, 3vw, var(--spacing-lg));
+}
+
+/* Ensure hero scales better on small devices */
+.hero {
+  min-height: 55vh;
+  padding: clamp(2.5rem, 8vw, 6rem) 1rem;
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-attachment: scroll; /* Avoid fixed backgrounds on mobile */
+}
+
+.hero h1 {
+  font-size: clamp(1.75rem, 4.5vw, 3.5rem);
+}
+
+.hero p {
+  font-size: clamp(1rem, 2.5vw, 1.25rem);
+}
+
+/* Navigation panel improvements for mobile chrome */
+nav {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Allow nav content to scroll if tall (e.g., small phones) */
+nav ul {
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 2rem 0;
+}
+
+/* Improve input group visuals on small screens */
+.input-group input,
+.input-group button {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Fix for Chrome rounding inputs inside flex on Android */
+.input-group input {
+  min-width: 0; /* Allow flex children to shrink properly */
+}
+
+/* Make map and timeline responsive if present */
+#map {
+  width: 100%;
+  height: 300px;
+  max-height: 50vh;
+}
+
+.timeline-item {
+  word-break: break-word;
+}
+
+/* Improve tap targets */
+.btn, .nav a {
+  min-height: 44px; /* Apple recommended touch size */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Small form improvements */
+@media (max-width: 420px) {
+  .section-title p {
+    font-size: 0.95rem;
+  }
+
+  .hero {
+    padding-top: 3.5rem; /* avoid header overlap */
+  }
+}
