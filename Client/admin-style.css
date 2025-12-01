@@ -220,13 +220,15 @@ legend {
 @media (max-width: 768px) {
     header {
         flex-direction: column;
+        gap: var(--spacing-md);
         text-align: center;
     }
     header nav {
-        margin-top: var(--spacing-md);
+        margin-top: 0;
     }
     header nav .nav-link {
         margin: 0 var(--spacing-sm);
+        display: inline-block; /* Ensure links have proper spacing */
     }
     .form-grid, .update-grid {
         grid-template-columns: 1fr;
@@ -240,5 +242,31 @@ legend {
     .btn {
         width: 100%;
         justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        padding-bottom: var(--spacing-md);
+    }
+    header {
+        padding: var(--spacing-md);
+    }
+    header h1 {
+        font-size: 1.5rem;
+    }
+    header nav .nav-link {
+        padding: var(--spacing-xs) var(--spacing-sm);
+        font-size: 0.9rem;
+    }
+    .card {
+        padding: var(--spacing-md);
+    }
+    .card-title {
+        font-size: 1.25rem;
+    }
+    .btn {
+        padding: 10px 20px;
+        font-size: 0.95rem;
     }
 }

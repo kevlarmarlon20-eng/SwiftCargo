@@ -1,5 +1,24 @@
 // Wait for the DOM to be fully loaded before running the script
 document.addEventListener('DOMContentLoaded', () => {
+
+  // --- Authentication ---
+  let adminToken = '';
+
+  function getAdminToken() {
+    // In a real app, you'd have a proper login page.
+    // For this prototype, we'll use a simple prompt.
+    const token = prompt('Please enter the admin secret token:');
+    if (token) {
+      adminToken = token;
+    } else {
+      alert('No token provided. API requests will fail.');
+    }
+  }
+
+  // Get the token as soon as the page loads
+  getAdminToken();
+
+
   // Select the forms
   const registerForm = document.getElementById('register-package-form');
   const updateForm = document.getElementById('update-status-form');
@@ -24,6 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${adminToken}`
           },
           body: JSON.stringify(data),
         });
@@ -39,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
           );
           registerForm.reset(); // Clear the form fields
         } else {
-          // Error from the server (e.g., 400, 404)
+          // Error from the server (e.g., 400, 404, 401, 403)
           showStatus(registerStatus, `Error: ${result.message}`, true);
         }
       } catch (error) {
@@ -69,6 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${adminToken}`
           },
           body: JSON.stringify(data),
         });

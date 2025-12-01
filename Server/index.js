@@ -2,16 +2,61 @@ import express from 'express';
 import { nanoid } from 'nanoid';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 
 // Since you're using ES Modules, __dirname is not available directly.
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const DB_PATH = path.join(__dirname, 'db.json');
 
 const app = express();
 const port = process.env.PORT || 8080;
 
 // In-memory "database"
 let packages = {};
+
+// --- Database Functions ---
+const loadPackages = () => {
+  try {
+    if (fs.existsSync(DB_PATH)) {
+      const data = fs.readFileSync(DB_PATH, 'utf8');
+      packages = JSON.parse(data);
+      console.log('Database loaded successfully.');
+    } else {
+      console.log('No database file found, starting with an empty one.');
+    }
+  } catch (error) {
+    console.error('Error loading database:', error);
+  }
+};
+
+const savePackages = () => {
+  try {
+    fs.writeFileSync(DB_PATH, JSON.stringify(packages, null, 2));
+    console.log('Database saved successfully.');
+  } catch (error) {
+    console.error('Error saving database:', error);
+  }
+};
+
+
+// --- Authentication ---
+const ADMIN_SECRET_TOKEN = 'Waterside'; // In a real app, use environment variables!
+
+const authenticateAdmin = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ message: 'Unauthorized: Missing or invalid token.' });
+  }
+
+  const token = authHeader.split(' ')[1];
+  if (token !== ADMIN_SECRET_TOKEN) {
+    return res.status(403).json({ message: 'Forbidden: Incorrect token.' });
+  }
+
+  next();
+};
+
 
 // --- Middleware ---
 
@@ -42,7 +87,7 @@ app.get('/track-result', (req, res) => {
  * Endpoint to register a new package.
  * **UPDATED** to accept all new fields from the new form.
  */
-app.post('/register-package', (req, res) => {
+app.post('/register-package', authenticateAdmin, (req, res) => {
   console.log('Received registration request:', req.body);
 
   // Destructure all fields from the request body.
@@ -103,6 +148,7 @@ app.post('/register-package', (req, res) => {
       },
     ],
   };
+  savePackages();
 
   console.log(`Package registered: ${trackingNumber}`, packages[trackingNumber]);
 
@@ -114,7 +160,7 @@ app.post('/register-package', (req, res) => {
  * Endpoint to update a package's status.
  * **UPDATED** to accept all fields from the update form.
  */
-app.post('/update-status', (req, res) => {
+app.post('/update-status', authenticateAdmin, (req, res) => {
   console.log('Received update request:', req.body);
 
   // Use bracket notation to handle kebab-case names from the HTML form
@@ -144,6 +190,7 @@ app.post('/update-status', (req, res) => {
     description, // **ADDED**
     timestamp: new Date(),
   });
+  savePackages();
 
   console.log(`Package ${trackingNumber} updated:`, packages[trackingNumber]);
 
@@ -192,6 +239,7 @@ app.post('/contact', (req, res) => {
 // --- Start Server ---
 
 app.listen(port, () => {
+  loadPackages();
   console.log(`Server is running on http://localhost:${port}`);
   console.log(`Admin panel available at http://localhost:${port}/admin`);
 });

@@ -86,7 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
       buildTimeline(data.history);
 
       // 6. Initialize and Update Map
-      initializeMap(data.location);
+      initializeMap(data);
     })
     .catch(error => {
       // This single .catch() block will now handle ALL errors
@@ -94,69 +94,99 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
   let map;
-  let marker;
 
   /**
-    * Initializes the Leaflet map
+    * Initializes the Leaflet map and displays the shipment route.
+    * @param {object} packageData - The full package data object from the API.
     */
-  function initializeMap(initialLocation) {
+  async function initializeMap(packageData) {
     if (map) {
-      map.remove();
+      map.remove(); // Remove previous map instance if it exists
     }
 
     // Default coordinates (e.g., center of the US) if no location is available
     const defaultCoords = [39.8283, -98.5795];
-
     map = L.map('map').setView(defaultCoords, 4);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     }).addTo(map);
 
-    if (initialLocation) {
-      // We'll need to geocode the location name to get coordinates
-      // For now, let's simulate it. Replace with a real geocoding API.
-      // Note: This is a placeholder. You'll need a geocoding service.
-      simulateGeocoding(initialLocation).then(coords => {
-        map.setView(coords, 10);
-        if (marker) {
-          marker.setLatLng(coords);
-        } else {
-          marker = L.marker(coords).addTo(map);
+    if (packageData && packageData.history && packageData.history.length > 0) {
+      // Create an array of geocoding promises
+      const geocodePromises = packageData.history.map(item => geocodeLocation(item.location));
+      
+      try {
+        // Wait for all locations to be geocoded
+        const coordinates = await Promise.all(geocodePromises);
+        
+        // Filter out any failed geocoding results (which return defaultCoords)
+        const validCoordinates = coordinates.filter(coord => coord !== defaultCoords);
+
+        if (validCoordinates.length > 1) {
+          // Create a polyline to show the route
+          const polyline = L.polyline(validCoordinates, { color: 'var(--clr-primary)' }).addTo(map);
+
+          // Add markers for the start and end points
+          const startMarker = L.marker(validCoordinates[0]).addTo(map)
+            .bindPopup(`<b>Origin:</b><br>${packageData.history[0].location}`);
+          const endMarker = L.marker(validCoordinates[validCoordinates.length - 1]).addTo(map)
+            .bindPopup(`<b>Current Location:</b><br>${packageData.history[packageData.history.length - 1].location}`);
+
+          // Fit the map to the bounds of the route
+          map.fitBounds(polyline.getBounds());
+        } else if (validCoordinates.length === 1) {
+          // If only one point, just center on it
+          map.setView(validCoordinates[0], 10);
+           L.marker(validCoordinates[0]).addTo(map)
+            .bindPopup(`<b>Location:</b><br>${packageData.history[0].location}`).openPopup();
         }
-        marker.bindPopup(`<b>Current Location:</b><br>${initialLocation}`).openPopup();
-      });
+
+      } catch (error) {
+        console.error("Error geocoding the path:", error);
+        // Fallback to showing just the last known location if path fails
+        const lastLocation = packageData.history[packageData.history.length - 1].location;
+        const coords = await geocodeLocation(lastLocation);
+        map.setView(coords, 10);
+        L.marker(coords).addTo(map).bindPopup(`<b>Current Location:</b><br>${lastLocation}`).openPopup();
+      }
     }
   }
 
   /**
-    * Placeholder for a geocoding service
-    * In a real app, you would use an API like OpenCage, Mapbox, or Google Maps Geocoding
+    * Geocodes a location name using the free Nominatim API.
+    * @param {string} locationName - The name of the location to geocode.
+    * @returns {Promise<[number, number]>} A promise that resolves to [lat, lon].
     */
-  async function simulateGeocoding(locationName) {
-    // This is a very simple and limited simulation.
-    // A real implementation would handle various location formats.
-    const locations = {
-      "New York, NY": [40.7128, -74.0060],
-      "Los Angeles, CA": [34.0522, -118.2437],
-      "Chicago, IL": [41.8781, -87.6298],
-      "Houston, TX": [29.7604, -95.3698],
-      "Phoenix, AZ": [33.4484, -112.0740],
-      "Philadelphia, PA": [39.9526, -75.1652],
-      "San Antonio, TX": [29.4241, -98.4936],
-      "San Diego, CA": [32.7157, -117.1611],
-      "Dallas, TX": [32.7767, -96.7970],
-      "San Jose, CA": [37.3382, -121.8863],
-      "London": [51.5074, -0.1278],
-      "Paris": [48.8566, 2.3522],
-      "Tokyo": [35.6895, 139.6917],
-      "Sydney": [ -33.8688, 151.2093],
-    };
+  async function geocodeLocation(locationName) {
+    const defaultCoords = [39.8283, -98.5795]; // Center of US
+    if (!locationName) return defaultCoords;
 
-    // Attempt to find a match, even if it's partial (e.g., "Paris, Frace")
-    const key = Object.keys(locations).find(k => locationName.includes(k));
+    const endpoint = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(locationName)}`;
 
-    return locations[key] || [39.8283, -98.5795]; // Return default if not found
+    try {
+      const response = await fetch(endpoint, {
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+      if (!response.ok) {
+        throw new Error(`Geocoding API returned status ${response.status}`);
+      }
+      const data = await response.json();
+
+      if (data && data.length > 0) {
+        // Return the coordinates of the first result
+        return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+      } else {
+        // No results found
+        console.warn(`Geocoding failed for: ${locationName}. No results found.`);
+        return defaultCoords;
+      }
+    } catch (error) {
+      console.error(`Error during geocoding for "${locationName}":`, error);
+      return defaultCoords; // Return default on error
+    }
   }
 
   /**
@@ -233,25 +263,27 @@ document.addEventListener('DOMContentLoaded', () => {
     * Updates the progress bar based on status
     */
   function updateProgressBar(status) {
-    let width = '10%'; // Default for 'Pending'
-    switch (status) {
-      case 'In-Transit':
+    // Normalize status coming from server/admin (server uses kebab-case, lowercase)
+    const s = (status || '').toString().trim().toLowerCase();
+    let width = '10%'; // Default for 'pending' or unknown
+    switch (s) {
+      case 'in-transit':
         width = '40%';
         break;
-      case 'On-Hold':
+      case 'on-hold':
         width = '50%';
         break;
-      case 'Out for Delivery':
+      case 'out-for-delivery':
         width = '70%';
         break;
-      case 'Delivered':
+      case 'delivered':
         width = '100%';
         break;
       default:
         width = '10%';
         break;
     }
-    progressBar.style.width = width;
+    if (progressBar) progressBar.style.width = width;
   }
 
   // Add functionality to the "Track Another" form
