@@ -23,6 +23,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const senderEmail = document.getElementById('sender-email');
   const senderPhone = document.getElementById('sender-phone');
 
+  function sanitizeHTML(str) {
+    const temp = document.createElement('div');
+    temp.textContent = str;
+    return temp.innerHTML;
+  }
+
   if (!trackingNumber) {
     showError('No tracking ID provided. Please go back and try again.');
     return;
@@ -57,27 +63,27 @@ document.addEventListener('DOMContentLoaded', () => {
       // --- Data received successfully, now fill in the page ---
 
       // 1. Populate Summary Box
-      trackingDisplay.textContent = data.trackingNumber;
-      statusDisplay.textContent = data.status ? `${capitalize(data.status)} in ${data.location}` : 'N/A';
+      trackingDisplay.textContent = sanitizeHTML(data.trackingNumber);
+      statusDisplay.textContent = data.status ? `${capitalize(sanitizeHTML(data.status))} in ${sanitizeHTML(data.location)}` : 'N/A';
 
       if (data.shipmentInfo && data.shipmentInfo.eta) {
         const etaDate = new Date(data.shipmentInfo.eta).toLocaleDateString('en-US', {
           year: 'numeric', month: 'long', day: 'numeric',
         });
-        deliveryDateDisplay.textContent = etaDate;
+        deliveryDateDisplay.textContent = sanitizeHTML(etaDate);
       } else {
         deliveryDateDisplay.textContent = 'N/A';
       }
 
       // 2. Populate Sender/Receiver
-      receiverName.textContent = data.receiver?.name || 'N/A';
-      receiverAddress.textContent = data.receiver?.address || 'N/A';
-      receiverEmail.textContent = data.receiver?.email || 'N/A';
-      receiverPhone.textContent = data.receiver?.phone || 'N/A';
-      senderName.textContent = data.sender?.name || 'N/A';
-      senderAddress.textContent = data.sender?.address || 'N/A';
-      senderEmail.textContent = data.sender?.email || 'N/A';
-      senderPhone.textContent = data.sender?.phone || 'N/A';
+      receiverName.textContent = sanitizeHTML(data.receiver?.name || 'N/A');
+      receiverAddress.textContent = sanitizeHTML(data.receiver?.address || 'N/A');
+      receiverEmail.textContent = sanitizeHTML(data.receiver?.email || 'N/A');
+      receiverPhone.textContent = sanitizeHTML(data.receiver?.phone || 'N/A');
+      senderName.textContent = sanitizeHTML(data.sender?.name || 'N/A');
+      senderAddress.textContent = sanitizeHTML(data.sender?.address || 'N/A');
+      senderEmail.textContent = sanitizeHTML(data.sender?.email || 'N/A');
+      senderPhone.textContent = sanitizeHTML(data.sender?.phone || 'N/A');
 
       // 4. Update Progress Bar
       updateProgressBar(data.status);
@@ -113,42 +119,50 @@ document.addEventListener('DOMContentLoaded', () => {
     }).addTo(map);
 
     if (packageData && packageData.history && packageData.history.length > 0) {
-      // Create an array of geocoding promises
-      const geocodePromises = packageData.history.map(item => geocodeLocation(item.location));
-      
-      try {
-        // Wait for all locations to be geocoded
-        const coordinates = await Promise.all(geocodePromises);
-        
-        // Filter out any failed geocoding results (which return defaultCoords)
-        const validCoordinates = coordinates.filter(coord => coord !== defaultCoords);
+      // Geocode each history item, but allow individual failures
+      const settleResults = await Promise.allSettled(
+        packageData.history.map(item => geocodeLocation(item.location))
+      );
 
-        if (validCoordinates.length > 1) {
-          // Create a polyline to show the route
-          const polyline = L.polyline(validCoordinates, { color: 'var(--clr-primary)' }).addTo(map);
+      // Pair history entries with coords (or null)
+      const paired = packageData.history.map((item, idx) => ({
+        item,
+        coord: settleResults[idx].status === 'fulfilled' ? settleResults[idx].value : null
+      }));
 
-          // Add markers for the start and end points
-          const startMarker = L.marker(validCoordinates[0]).addTo(map)
-            .bindPopup(`<b>Origin:</b><br>${packageData.history[0].location}`);
-          const endMarker = L.marker(validCoordinates[validCoordinates.length - 1]).addTo(map)
-            .bindPopup(`<b>Current Location:</b><br>${packageData.history[packageData.history.length - 1].location}`);
+      // Filter only entries with coordinates
+      const validEntries = paired.filter(p => p.coord && Array.isArray(p.coord));
 
-          // Fit the map to the bounds of the route
-          map.fitBounds(polyline.getBounds());
-        } else if (validCoordinates.length === 1) {
-          // If only one point, just center on it
-          map.setView(validCoordinates[0], 10);
-           L.marker(validCoordinates[0]).addTo(map)
-            .bindPopup(`<b>Location:</b><br>${packageData.history[0].location}`).openPopup();
+      // Resolve polyline color from CSS variable
+      const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--clr-primary').trim() || '#007bff';
+
+      if (validEntries.length > 1) {
+        const coords = validEntries.map(v => v.coord);
+        const polyline = L.polyline(coords, { color: primaryColor }).addTo(map);
+
+        // Add markers with correct paired popups
+        validEntries.forEach((v, i) => {
+          const label = i === 0 ? `<b>Origin:</b><br>${sanitizeHTML(v.item.location)}` : (i === validEntries.length - 1 ? `<b>Current Location:</b><br>${sanitizeHTML(v.item.location)}` : sanitizeHTML(v.item.location));
+          L.marker(v.coord).addTo(map).bindPopup(label);
+        });
+
+        map.fitBounds(polyline.getBounds());
+      } else if (validEntries.length === 1) {
+        map.setView(validEntries[0].coord, 10);
+        L.marker(validEntries[0].coord).addTo(map).bindPopup(`<b>Location:</b><br>${sanitizeHTML(validEntries[0].item.location)}`).openPopup();
+      } else {
+        // No geocoded points: try cache for last known or fallback to default
+        const last = packageData.history[packageData.history.length - 1];
+        const normalized = last.location.toLowerCase();
+        const cacheKey = Object.keys(locationCache).find(k => normalized.includes(k) || k.includes(normalized));
+        if (cacheKey) {
+          const coords = locationCache[cacheKey];
+          map.setView(coords, 6);
+          L.marker(coords).addTo(map).bindPopup(`<b>Approx Location:</b><br>${sanitizeHTML(last.location)}`).openPopup();
+        } else {
+          // Final fallback center
+          map.setView(defaultCoords, 3);
         }
-
-      } catch (error) {
-        console.error("Error geocoding the path:", error);
-        // Fallback to showing just the last known location if path fails
-        const lastLocation = packageData.history[packageData.history.length - 1].location;
-        const coords = await geocodeLocation(lastLocation);
-        map.setView(coords, 10);
-        L.marker(coords).addTo(map).bindPopup(`<b>Current Location:</b><br>${lastLocation}`).openPopup();
       }
     }
   }
@@ -188,44 +202,46 @@ document.addEventListener('DOMContentLoaded', () => {
     // Normalize the location name for cache lookup
     const normalizedName = locationName.toLowerCase().trim();
 
-    // Step 1: Check cache first for exact or partial matches
-    const cacheKey = Object.keys(locationCache).find(key => 
-      normalizedName.includes(key) || key.includes(normalizedName)
-    );
-    if (cacheKey) {
-      console.log(`Found location in cache: ${cacheKey} for "${locationName}"`);
-      return locationCache[cacheKey];
-    }
-
-    // Step 2: Try the full location name
+    // Step 1: Try the full location name first (best fidelity)
     let coords = await tryGeocoding(locationName);
     if (coords) return coords;
 
-    // Step 3: Extract city (last comma-separated segment or last word)
-    const parts = locationName.split(',').map(p => p.trim());
-    if (parts.length > 1) {
-      const city = parts[parts.length - 1]; // Last part (usually city)
-      coords = await tryGeocoding(city);
-      if (coords) return coords;
+    // Step 2: Check cache for common city names (partial match)
+    // Keep cacheKey for fallback but do not log until used
+    const cacheKey = Object.keys(locationCache).find(key => normalizedName.includes(key) || key.includes(normalizedName));
 
-      // Also try second-to-last part (country)
-      if (parts.length > 2) {
-        const country = parts[parts.length - 2];
-        coords = await tryGeocoding(country);
-        if (coords) return coords;
-      }
+    // Step 3: Try the first comma-separated part (commonly the city)
+    const parts = locationName.split(',').map(p => p.trim()).filter(Boolean);
+    if (parts.length > 0) {
+      const firstPart = parts[0];
+      coords = await tryGeocoding(firstPart, locationName);
+      if (coords) return coords;
     }
 
-    // Step 4: Try just the first word (in case of typos)
+    // Step 4: Try left-to-right parts (useful when address lists street, city, region, country)
+    for (let i = 1; i < parts.length; i++) {
+      const part = parts[i];
+      // skip short tokens and likely postal codes
+      if (!part || part.length < 3 || /\d/.test(part)) continue;
+      coords = await tryGeocoding(part, locationName);
+      if (coords) return coords;
+    }
+
+    // Step 5: Try the first word as a last attempt (handles simple typos)
     const firstWord = locationName.split(/[\s,]+/)[0];
     if (firstWord && firstWord !== locationName) {
-      coords = await tryGeocoding(firstWord);
+      coords = await tryGeocoding(firstWord, locationName);
       if (coords) return coords;
     }
 
-    // Step 5: If all else fails, return default
-    console.warn(`Geocoding failed for: ${locationName}. Using default center.`);
-    return defaultCoords;
+    // Step 6: If cacheKey exists, use cached coords as a fallback
+    if (cacheKey) {
+      return locationCache[cacheKey];
+    }
+
+    // Step 7: If all else fails, return null so caller can handle fallback
+    console.warn(`Geocoding failed for: ${locationName}. No coordinates found.`);
+    return null;
   }
 
   /**
@@ -236,7 +252,7 @@ document.addEventListener('DOMContentLoaded', () => {
   async function tryGeocoding(query) {
     if (!query) return null;
 
-    const endpoint = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`;
+    const endpoint = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`;
 
     try {
       const response = await fetch(endpoint, {
@@ -248,6 +264,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const data = await response.json();
       if (data && data.length > 0) {
+        // If an originalName was provided, try to pick the best candidate
+        if (originalName) {
+          const on = originalName.toLowerCase();
+          // Prefer a candidate whose display_name contains tokens from originalName (e.g., country)
+          const tokens = on.split(/[,\s]+/).map(t => t.trim()).filter(Boolean);
+
+          // Rank candidates: +1 for matching token in display_name, +1 for place-type (city/town/village), higher importance
+          let best = null;
+          let bestScore = -Infinity;
+
+          data.forEach(d => {
+            let score = 0;
+            const name = (d.display_name || '').toLowerCase();
+            tokens.forEach(tok => {
+              if (tok.length > 2 && name.includes(tok)) score += 2;
+            });
+            if (d.type && ['city','town','village','municipality','hamlet'].includes(d.type)) score += 1;
+            if (d.importance) score += parseFloat(d.importance);
+            if (score > bestScore) {
+              bestScore = score;
+              best = d;
+            }
+          });
+
+          const chosen = best || data[0];
+          const result = [parseFloat(chosen.lat), parseFloat(chosen.lon)];
+          console.log(`Geocoding success for "${query}" (chosen):`, result, 'from', data.map(x=>x.display_name));
+          return result;
+        }
+
         const result = [parseFloat(data[0].lat), parseFloat(data[0].lon)];
         console.log(`Geocoding success for "${query}":`, result);
         return result;
@@ -259,6 +305,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+
   /**
     * Shows an error message and hides the main content
     */
@@ -266,7 +313,7 @@ document.addEventListener('DOMContentLoaded', () => {
     resultsContainer.classList.add('hidden');
     trackingAlert.classList.remove('hidden');
     trackingAlert.classList.add('alert-error'); // Add the error class
-    alertMessage.textContent = message || 'An unknown error occurred.';
+    alertMessage.textContent = sanitizeHTML(message) || 'An unknown error occurred.';
   }
   /**
     * Capitalizes the first letter of each word in a string.
@@ -307,10 +354,10 @@ document.addEventListener('DOMContentLoaded', () => {
       timelineItem.className = itemClass;
 
       const itemHtml = `
-        <div class="timeline-status">${capitalize(item.status)}</div>
+        <div class="timeline-status">${capitalize(sanitizeHTML(item.status))}</div>
         
         <div class="timeline-description">
-          ${item.description}
+          ${sanitizeHTML(item.description)}
         </div>
         
         <div class="timeline-date">
@@ -318,7 +365,7 @@ document.addEventListener('DOMContentLoaded', () => {
             dateStyle: 'medium',
             timeStyle: 'short',
           })}
-          (at ${item.location})
+          (at ${sanitizeHTML(item.location)})
         </div>
       `;
       timelineItem.innerHTML = itemHtml;
