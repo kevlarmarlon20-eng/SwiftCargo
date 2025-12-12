@@ -49,6 +49,29 @@ a {
     color: var(--clr-primary);
 }
 
+/* Login Container */
+#login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.login-card {
+    background: var(--clr-white);
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius-md);
+    box-shadow: var(--shadow-std);
+    width: 100%;
+    max-width: 400px;
+}
+
+.login-card h2 {
+    text-align: center;
+    margin-bottom: var(--spacing-lg);
+    color: var(--clr-dark);
+}
+
 /* Header */
 header {
     background-color: var(--clr-dark);
@@ -62,7 +85,7 @@ header {
 }
 
 header h1 {
-    font-size: 1.8rem;
+    font-size: 2rem;
     color: var(--clr-primary);
 }
 
@@ -82,7 +105,7 @@ header nav .nav-link.active {
 
 /* Main Container */
 .container {
-    max-width: 900px;
+    max-width: 1200px;
     margin: 0 auto;
     padding: 0 var(--spacing-md);
 }
@@ -90,24 +113,24 @@ header nav .nav-link.active {
 /* Card Styles */
 .card {
     background: var(--clr-white);
-    padding: var(--spacing-lg);
+    padding: var(--spacing-xl);
     border-radius: var(--border-radius-md);
     box-shadow: var(--shadow-light);
     margin-bottom: var(--spacing-xl);
 }
 
 .card-title {
-    font-size: 1.5rem;
+    font-size: 1.75rem;
     color: var(--clr-dark);
     margin-bottom: var(--spacing-lg);
-    padding-bottom: var(--spacing-sm);
+    padding-bottom: var(--spacing-md);
     border-bottom: 1px solid var(--clr-border);
     display: flex;
     align-items: center;
 }
 
 .card-title i {
-    margin-right: var(--spacing-sm);
+    margin-right: var(--spacing-md);
     color: var(--clr-primary);
 }
 
@@ -151,10 +174,11 @@ legend {
 .form-group input[type="tel"],
 .form-group input[type="number"],
 .form-group input[type="date"],
+.form-group input[type="password"],
 .form-group select,
 .form-group textarea {
     width: 100%;
-    padding: 10px 12px;
+    padding: 12px 15px;
     border: 1px solid var(--clr-border);
     border-radius: var(--border-radius-sm);
     font-size: 1rem;
@@ -166,6 +190,7 @@ legend {
 .form-group textarea:focus {
     border-color: var(--clr-primary);
     outline: none;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
 }
 
 .form-group textarea {
@@ -182,6 +207,7 @@ legend {
 .btn {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     padding: 12px 25px;
     border: none;
     border-radius: var(--border-radius-sm);
@@ -191,6 +217,7 @@ legend {
     transition: var(--transition-std);
     background-color: var(--clr-primary);
     color: var(--clr-white);
+    width: 100%;
 }
 
 .btn i {
@@ -239,10 +266,6 @@ legend {
     .form-actions {
         text-align: center;
     }
-    .btn {
-        width: 100%;
-        justify-content: center;
-    }
 }
 
 @media (max-width: 480px) {
@@ -269,4 +292,245 @@ legend {
         padding: 10px 20px;
         font-size: 0.95rem;
     }
+}
+
+/* Form Status Messages */
+.form-status {
+    margin-top: var(--spacing-md);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--border-radius-sm);
+    text-align: center;
+    font-weight: 500;
+    display: block; /* Start as block */
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.form-status:empty {
+    display: none; /* Hide if empty */
+}
+
+.form-status.success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.form-status.error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+/* Package List Section */
+.card-title-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-lg);
+    border-bottom: 1px solid var(--clr-border);
+}
+
+.card-title-wrapper .card-title {
+    margin-bottom: 0;
+    border-bottom: none;
+}
+
+.table-container {
+    overflow-x: auto; /* Allows horizontal scrolling on small screens */
+}
+
+#package-list-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: var(--spacing-md);
+}
+
+#package-list-table th,
+#package-list-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid var(--clr-border);
+    vertical-align: middle;
+}
+
+#package-list-table th {
+    background-color: var(--clr-light);
+    font-weight: bold;
+    color: var(--clr-dark);
+}
+
+#package-list-table tbody tr:hover {
+    background-color: #f1f1f1;
+}
+
+#package-list-table td.actions {
+    text-align: center;
+    white-space: nowrap;
+}
+
+.btn-icon {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 5px;
+    font-size: 1.1rem;
+    color: var(--clr-muted);
+    transition: color 0.2s;
+}
+
+.btn-icon:hover {
+    color: var(--clr-primary);
+}
+
+.btn-icon.delete-btn:hover {
+    color: var(--clr-error);
+}
+
+#refresh-packages-btn {
+    font-size: 1.3rem;
+}
+
+/* Edit Modal */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    padding: var(--spacing-md);
+    overflow-y: auto;
+}
+
+.modal-content {
+    background: var(--clr-white);
+    width: 100%;
+    max-width: 800px;
+    border-radius: var(--border-radius-md);
+    box-shadow: 0 5px 25px rgba(0,0,0,0.2);
+    animation: slide-down 0.3s ease-out;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-bottom: 1px solid var(--clr-border);
+}
+
+.modal-header .card-title {
+    margin: 0;
+    border: none;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--clr-muted);
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.modal-close:hover {
+    color: var(--clr-dark);
+}
+
+#edit-package-form {
+    padding: var(--spacing-lg);
+    max-height: 75vh;
+    overflow-y: auto;
+}
+
+#edit-package-form .form-actions {
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--clr-border);
+}
+
+
+/* Keyframe animations for modal */
+@keyframes slide-down {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Logout Button */
+#logout-button {
+    background: var(--clr-error);
+    border: none;
+}
+#logout-button:hover {
+    background: #a72834;
+}
+
+/* Final responsive tweaks for table */
+@media (max-width: 768px) {
+    #package-list-table thead {
+        display: none; /* Hide table header */
+    }
+
+    #package-list-table,
+    #package-list-table tbody,
+    #package-list-table tr,
+    #package-list-table td {
+        display: block;
+        width: 100%;
+    }
+
+    #package-list-table tr {
+        margin-bottom: var(--spacing-md);
+        border: 1px solid var(--clr-border);
+        border-radius: var(--border-radius-sm);
+    }
+
+    #package-list-table td {
+        text-align: right;
+        padding-left: 50%;
+        position: relative;
+        border-bottom: 1px solid var(--clr-border);
+    }
+
+    #package-list-table td:last-child {
+        border-bottom: none;
+    }
+
+    #package-list-table td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 15px;
+        width: calc(50% - 30px);
+        text-align: left;
+        font-weight: bold;
+        color: var(--clr-dark);
+    }
+
+    /* Assign data-label in JS if this approach is used.
+       For now, let's keep the simpler horizontal scroll.
+       The below is a pattern for a "stacked" table display.
+       We will use a simpler method for now, but this is good for reference.
+       Let's stick to the `overflow-x: auto;` on the container.
+    */
+    /* Re-enabling for a better mobile experience */
+    #package-list-table td[data-label="Tracking #"]::before { content: 'Tracking #'; }
+    #package-list-table td[data-label="Sender"]::before { content: 'Sender'; }
+    #package-list-table td[data-label="Receiver"]::before { content: 'Receiver'; }
+    #package-list-table td[data-label="Status"]::before { content: 'Status'; }
+    #package-list-table td[data-label="ETA"]::before { content: 'ETA'; }
+    #package-list-table td[data-label="Actions"]::before { content: 'Actions'; }
+
+    /* A simplified version of responsive table that's less complex than data-labels */
+    /* This will be handled by the overflow-x scroll on .table-container */
 }

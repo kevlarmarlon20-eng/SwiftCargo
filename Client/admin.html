@@ -11,7 +11,21 @@
     <link rel="stylesheet" href="admin-style.css" />
   </head>
   <body>
-    <header>
+    <div id="login-container">
+      <div class="login-card">
+        <h2>Admin Login</h2>
+        <form id="login-form">
+          <div class="form-group">
+            <label for="admin-token">Security Token</label>
+            <input type="password" id="admin-token" name="admin-token" required>
+          </div>
+          <button type="submit" class="btn">Login</button>
+        </form>
+        <div id="login-status" class="form-status"></div>
+      </div>
+    </div>
+
+    <header style="display: none;">
       <h1>SwiftCargo Admin</h1>
       <nav>
         <a href="index.html" class="nav-link">Client Site</a>
@@ -20,7 +34,7 @@
       </nav>
     </header>
 
-    <main class="container">
+    <main class="container" style="display: none;">
       <section id="register-package" class="card">
         <h2 class="card-title">
           <i class="fas fa-plus-circle"></i> Register New Package
@@ -233,7 +247,117 @@
           </div>
         </form>
       </section>
+
+      <!-- Section for Listing Packages -->
+      <section id="package-list-section" class="card">
+        <div class="card-title-wrapper">
+          <h2 class="card-title"><i class="fas fa-box-open"></i> Registered Packages</h2>
+          <button id="refresh-packages-btn" class="btn btn-icon" title="Refresh List">
+            <i class="fas fa-sync-alt"></i>
+          </button>
+        </div>
+        <div id="package-list-status" class="form-status"></div>
+        <div class="table-container">
+          <table id="package-list-table">
+            <thead>
+              <tr>
+                <th>Tracking #</th>
+                <th>Sender</th>
+                <th>Receiver</th>
+                <th>Status</th>
+                <th>ETA</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="package-list-body">
+              <!-- Package rows will be inserted here by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
     </main>
+
+    <!-- Edit Package Modal -->
+    <div id="edit-modal" class="modal-overlay" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="card-title">Edit Package Details</h2>
+          <button id="modal-close-btn" class="modal-close" title="Close">&times;</button>
+        </div>
+        <form id="edit-package-form">
+          <input type="hidden" id="edit-tracking-number" name="trackingNumber">
+          <!-- The rest of the form is similar to the register form -->
+          <fieldset>
+            <legend>Sender Details</legend>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="edit-sender-name">Sender Name</label>
+                <input type="text" id="edit-sender-name" name="sender-name" required>
+              </div>
+              <div class="form-group">
+                <label for="edit-sender-email">Sender Email</label>
+                <input type="email" id="edit-sender-email" name="sender-email" required>
+              </div>
+              <div class="form-group">
+                <label for="edit-sender-phone">Sender Phone</label>
+                <input type="tel" id="edit-sender-phone" name="sender-phone" required>
+              </div>
+              <div class="form-group form-group-full">
+                <label for="edit-sender-address">Sender Address</label>
+                <input type="text" id="edit-sender-address" name="sender-address" required>
+              </div>
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend>Receiver Details</legend>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="edit-receiver-name">Receiver Name</label>
+                <input type="text" id="edit-receiver-name" name="receiver-name" required>
+              </div>
+              <div class="form-group">
+                <label for="edit-receiver-email">Receiver Email</label>
+                <input type="email" id="edit-receiver-email" name="receiver-email" required>
+              </div>
+              <div class="form-group">
+                <label for="edit-receiver-phone">Receiver Phone</label>
+                <input type="tel" id="edit-receiver-phone" name="receiver-phone" required>
+              </div>
+              <div class="form-group form-group-full">
+                <label for="edit-receiver-address">Receiver Address</label>
+                <input type="text" id="edit-receiver-address" name="receiver-address" required>
+              </div>
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend>Package & Shipment Info</legend>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="edit-origin">Origin</label>
+                <input type="text" id="edit-origin" name="origin" required>
+              </div>
+              <div class="form-group">
+                <label for="edit-destination">Destination</label>
+                <input type="text" id="edit-destination" name="destination" required>
+              </div>
+              <div class="form-group">
+                <label for="edit-weight">Weight (kg)</label>
+                <input type="number" id="edit-weight" name="weight" step="0.1" required>
+              </div>
+              <div class="form-group">
+                <label for="edit-eta">ETA</label>
+                <input type="date" id="edit-eta" name="eta" required>
+              </div>
+            </div>
+          </fieldset>
+          <div class="form-actions">
+            <button type="submit" class="btn"><i class="fas fa-save"></i> Save Changes</button>
+            <div id="edit-form-status" class="form-status"></div>
+          </div>
+        </form>
+      </div>
+    </div>
 
     <script src="admin.js"></script>
   </body>

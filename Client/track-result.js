@@ -13,15 +13,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const trackingAlert = document.getElementById('tracking-alert');
   const alertMessage = document.getElementById('alert-message');
 
-  // Receiver & Sender details
-  const receiverName = document.getElementById('receiver-name');
-  const receiverAddress = document.getElementById('receiver-address');
-  const receiverEmail = document.getElementById('receiver-email');
-  const receiverPhone = document.getElementById('receiver-phone');
-  const senderName = document.getElementById('sender-name');
-  const senderAddress = document.getElementById('sender-address');
-  const senderEmail = document.getElementById('sender-email');
-  const senderPhone = document.getElementById('sender-phone');
+  // Receiver & Sender details - these elements are not currently in track-result.html, but were in the template
+  // const receiverName = document.getElementById('receiver-name');
+  // const receiverAddress = document.getElementById('receiver-address');
+  // const receiverEmail = document.getElementById('receiver-email');
+  // const receiverPhone = document.getElementById('receiver-phone');
+  // const senderName = document.getElementById('sender-name');
+  // const senderAddress = document.getElementById('sender-address');
+  // const senderEmail = document.getElementById('sender-email');
+  // const senderPhone = document.getElementById('sender-phone');
 
   function sanitizeHTML(str) {
     const temp = document.createElement('div');
@@ -44,9 +44,8 @@ document.addEventListener('DOMContentLoaded', () => {
           throw new Error('The tracking number you entered seems incorrect. Please check the number and try again.');
         } else {
           // For other server errors (500, etc.), try to get the server's message
-          // Use .json() which returns a promise, so chain the .then()
-          return response.json().then(err => { 
-            throw new Error(err.message || 'An unknown server error occurred.'); 
+          return response.json().then(err => {
+            throw new Error(err.message || 'An unknown server error occurred.');
           });
         }
       }
@@ -55,10 +54,13 @@ document.addEventListener('DOMContentLoaded', () => {
     })
     .then(data => {
       // This block will ONLY run if the fetch was successful
-      
+
       // Hide any previous error messages
       trackingAlert.classList.add('hidden');
       resultsContainer.classList.remove('hidden');
+
+      // Store package data for real-time updates
+      window.__packageData = data;
 
       // --- Data received successfully, now fill in the page ---
 
@@ -75,15 +77,8 @@ document.addEventListener('DOMContentLoaded', () => {
         deliveryDateDisplay.textContent = 'N/A';
       }
 
-      // 2. Populate Sender/Receiver
-      receiverName.textContent = sanitizeHTML(data.receiver?.name || 'N/A');
-      receiverAddress.textContent = sanitizeHTML(data.receiver?.address || 'N/A');
-      receiverEmail.textContent = sanitizeHTML(data.receiver?.email || 'N/A');
-      receiverPhone.textContent = sanitizeHTML(data.receiver?.phone || 'N/A');
-      senderName.textContent = sanitizeHTML(data.sender?.name || 'N/A');
-      senderAddress.textContent = sanitizeHTML(data.sender?.address || 'N/A');
-      senderEmail.textContent = sanitizeHTML(data.sender?.email || 'N/A');
-      senderPhone.textContent = sanitizeHTML(data.sender?.phone || 'N/A');
+      // 2. Populate Sender/Receiver - (These elements are commented out in HTML, so this part remains commented)
+      // SENDER AND RECEIVER INFO REMOVED FOR SECURITY
 
       // 4. Update Progress Bar
       updateProgressBar(data.status);
@@ -100,14 +95,28 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
   let map;
+  let updateInterval;
+  let updateAttempts = 0;
+  const MAX_UPDATE_ATTEMPTS = 10;
+  const REAL_TIME_UPDATE_INTERVAL = 5000; // 5 seconds
 
   /**
-    * Initializes the Leaflet map and displays the shipment route.
-    * @param {object} packageData - The full package data object from the API.
-    */
+   * Map layer objects for real-time updates
+   */
+  const mapLayers = {
+    markers: [],
+    polyline: null,
+    updateIndicator: null,
+  };
+
+  /**
+   * Initializes the Leaflet map and displays the shipment route.
+   * @param {object} packageData - The full package data object from the API.
+   */
   async function initializeMap(packageData) {
     if (map) {
-      map.remove(); // Remove previous map instance if it exists
+      map.remove();
+      clearInterval(updateInterval);
     }
 
     // Default coordinates (e.g., center of the US) if no location is available
@@ -115,222 +124,217 @@ document.addEventListener('DOMContentLoaded', () => {
     map = L.map('map').setView(defaultCoords, 4);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      maxZoom: 19,
     }).addTo(map);
 
-    if (packageData && packageData.history && packageData.history.length > 0) {
-      // Geocode each history item, but allow individual failures
-      const settleResults = await Promise.allSettled(
-        packageData.history.map(item => geocodeLocation(item.location))
-      );
+    // Render the map with current data
+    await renderMapRoute(packageData);
 
-      // Pair history entries with coords (or null)
-      const paired = packageData.history.map((item, idx) => ({
-        item,
-        coord: settleResults[idx].status === 'fulfilled' ? settleResults[idx].value : null
-      }));
+    // Start real-time updates if we have a tracking number
+    if (trackingNumber) {
+      startRealTimeUpdates(trackingNumber);
+    }
+  }
 
-      // Filter only entries with coordinates
-      const validEntries = paired.filter(p => p.coord && Array.isArray(p.coord));
+  /**
+   * Renders the shipping route on the map with coordinates
+   * @param {object} packageData - Package data with coordinates
+   */
+  async function renderMapRoute(packageData) {
+    // Clear existing markers and polylines
+    mapLayers.markers.forEach(marker => map.removeLayer(marker));
+    mapLayers.markers = [];
+    if (mapLayers.polyline) {
+      map.removeLayer(mapLayers.polyline);
+      mapLayers.polyline = null;
+    }
 
-      // Resolve polyline color from CSS variable
-      const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--clr-primary').trim() || '#007bff';
+    if (!packageData || !packageData.history || packageData.history.length === 0) {
+      // Show default view if no data
+      map.setView([39.8283, -98.5795], 3);
+      return;
+    }
 
-      if (validEntries.length > 1) {
-        const coords = validEntries.map(v => v.coord);
-        const polyline = L.polyline(coords, { color: primaryColor }).addTo(map);
+    // Extract coordinates from history
+    const routePoints = packageData.history
+      .filter(item => item.coordinates && isValidCoordinates(item.coordinates))
+      .map(item => [item.coordinates.lat, item.coordinates.lng]);
 
-        // Add markers with correct paired popups
-        validEntries.forEach((v, i) => {
-          const label = i === 0 ? `<b>Origin:</b><br>${sanitizeHTML(v.item.location)}` : (i === validEntries.length - 1 ? `<b>Current Location:</b><br>${sanitizeHTML(v.item.location)}` : sanitizeHTML(v.item.location));
-          L.marker(v.coord).addTo(map).bindPopup(label);
-        });
+    // Add current location if it has coordinates
+    if (packageData.coordinates && isValidCoordinates(packageData.coordinates)) {
+      routePoints.push([packageData.coordinates.lat, packageData.coordinates.lng]);
+    }
 
-        map.fitBounds(polyline.getBounds());
-      } else if (validEntries.length === 1) {
-        map.setView(validEntries[0].coord, 10);
-        L.marker(validEntries[0].coord).addTo(map).bindPopup(`<b>Location:</b><br>${sanitizeHTML(validEntries[0].item.location)}`).openPopup();
+    if (routePoints.length === 0) {
+      // No valid coordinates, show default
+      map.setView([39.8283, -98.5795], 3);
+      return;
+    }
+
+    // Get primary color from CSS
+    const primaryColor = getComputedStyle(document.documentElement)
+      .getPropertyValue('--clr-primary')
+      .trim() || '#007bff';
+
+    // Draw polyline for the route
+    if (routePoints.length > 1) {
+      mapLayers.polyline = L.polyline(routePoints, {
+        color: primaryColor,
+        weight: 3,
+        opacity: 0.8,
+        dashArray: '5, 5',
+      }).addTo(map);
+    }
+
+    // Define custom icons
+    const originIcon = createCustomIcon('#28a745'); // Green
+    const currentIcon = createCustomIcon('#dc3545'); // Red (active)
+    const intermediateIcon = createCustomIcon(primaryColor);
+
+    // Add markers for each history point
+    packageData.history.forEach((item, index) => {
+      if (!item.coordinates || !isValidCoordinates(item.coordinates)) {
+        return;
+      }
+
+      const coord = [item.coordinates.lat, item.coordinates.lng];
+      let icon = intermediateIcon;
+      let popupContent = sanitizeHTML(item.location);
+
+      if (index === 0) {
+        icon = originIcon;
+        popupContent = `<b style="color: #28a745;">📦 Origin</b><br>${sanitizeHTML(item.location)}`;
+      } else if (index === packageData.history.length - 1) {
+        icon = currentIcon;
+        popupContent = `<b style="color: #dc3545;">📍 Current Location</b><br>${sanitizeHTML(item.location)}`;
       } else {
-        // No geocoded points: try cache for last known or fallback to default
-        const last = packageData.history[packageData.history.length - 1];
-        const normalized = last.location.toLowerCase();
-        const cacheKey = Object.keys(locationCache).find(k => normalized.includes(k) || k.includes(normalized));
-        if (cacheKey) {
-          const coords = locationCache[cacheKey];
-          map.setView(coords, 6);
-          L.marker(coords).addTo(map).bindPopup(`<b>Approx Location:</b><br>${sanitizeHTML(last.location)}`).openPopup();
-        } else {
-          // Final fallback center
-          map.setView(defaultCoords, 3);
-        }
+        popupContent = `<b>✓ Stop</b><br>${sanitizeHTML(item.location)}`;
       }
-    }
-  }
 
-  /**
-    * Predefined cache of common shipping hub locations (fallback for bad geocoding).
-    * Used as last resort if Nominatim fails.
-    */
-  const locationCache = {
-    'london': [51.5074, -0.1278],
-    'paris': [48.8566, 2.3522],
-    'new york': [40.7128, -74.0060],
-    'tokyo': [35.6762, 139.6503],
-    'singapore': [1.3521, 103.8198],
-    'dubai': [25.2048, 55.2708],
-    'shanghai': [31.2304, 121.4737],
-    'hong kong': [22.3193, 114.1694],
-    'amsterdam': [52.3676, 4.9041],
-    'frankfurt': [50.1109, 8.6821],
-    'los angeles': [34.0522, -118.2437],
-    'chicago': [41.8781, -87.6298],
-    'toronto': [43.6532, -79.3832],
-    'sydney': [33.8688, 151.2093],
-    'mumbai': [19.0760, 72.8777],
-    'bangkok': [13.7563, 100.5018],
-  };
+      const marker = L.marker(coord, { icon })
+        .addTo(map)
+        .bindPopup(popupContent, { maxWidth: 250 });
 
-  /**
-    * Geocodes a location name using the free Nominatim API with fallback strategies.
-    * @param {string} locationName - The name of the location to geocode.
-    * @returns {Promise<[number, number]>} A promise that resolves to [lat, lon].
-    */
-  async function geocodeLocation(locationName) {
-    const defaultCoords = [39.8283, -98.5795]; // Center of US
-    if (!locationName) return defaultCoords;
-
-    // Normalize the location name for cache lookup
-    const normalizedName = locationName.toLowerCase().trim();
-
-    // Step 1: Try the full location name first (best fidelity)
-    let coords = await rateLimitedTryGeocoding(locationName, locationName);
-    if (coords) return coords;
-
-    // Step 2: Check cache for common city names (partial match)
-    // Keep cacheKey for fallback but do not log until used
-    const cacheKey = Object.keys(locationCache).find(key => normalizedName.includes(key) || key.includes(normalizedName));
-
-    // Step 3: Try the first comma-separated part (commonly the city)
-    const parts = locationName.split(',').map(p => p.trim()).filter(Boolean);
-    if (parts.length > 0) {
-      const firstPart = parts[0];
-      coords = await rateLimitedTryGeocoding(firstPart, locationName);
-      if (coords) return coords;
-    }
-
-    // Step 4: Try left-to-right parts (useful when address lists street, city, region, country)
-    for (let i = 1; i < parts.length; i++) {
-      const part = parts[i];
-      // skip short tokens and likely postal codes
-      if (!part || part.length < 3 || /\d/.test(part)) continue;
-      coords = await rateLimitedTryGeocoding(part, locationName);
-      if (coords) return coords;
-    }
-
-    // Step 5: Try the first word as a last attempt (handles simple typos)
-    const firstWord = locationName.split(/[\s,]+/)[0];
-    if (firstWord && firstWord !== locationName) {
-      coords = await rateLimitedTryGeocoding(firstWord, locationName);
-      if (coords) return coords;
-    }
-
-    // Step 6: If cacheKey exists, use cached coords as a fallback
-    if (cacheKey) {
-      return locationCache[cacheKey];
-    }
-
-    // Step 7: If all else fails, return null so caller can handle fallback
-    console.warn(`Geocoding failed for: ${locationName}. No coordinates found.`);
-    return null;
-  }
-
-  /**
-    * Helper function to attempt geocoding with Nominatim API.
-    * @param {string} query - The location query string.
-    * @returns {Promise<[number, number]|null>} Coordinates if found, null otherwise.
-    */
-  async function tryGeocoding(query) {
-    if (!query) return null;
-
-    const endpoint = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`;
-
-    try {
-      const response = await fetch(endpoint, {
-        headers: {
-          'Accept': 'application/json'
-        }
-      });
-      if (!response.ok) return null;
-
-      const data = await response.json();
-      if (data && data.length > 0) {
-        // If an originalName was provided, try to pick the best candidate
-        if (originalName) {
-          const on = originalName.toLowerCase();
-          // Prefer a candidate whose display_name contains tokens from originalName (e.g., country)
-          const tokens = on.split(/[,\s]+/).map(t => t.trim()).filter(Boolean);
-
-          // Rank candidates: +1 for matching token in display_name, +1 for place-type (city/town/village), higher importance
-          let best = null;
-          let bestScore = -Infinity;
-
-          data.forEach(d => {
-            let score = 0;
-            const name = (d.display_name || '').toLowerCase();
-            tokens.forEach(tok => {
-              if (tok.length > 2 && name.includes(tok)) score += 2;
-            });
-            if (d.type && ['city','town','village','municipality','hamlet'].includes(d.type)) score += 1;
-            if (d.importance) score += parseFloat(d.importance);
-            if (score > bestScore) {
-              bestScore = score;
-              best = d;
-            }
-          });
-
-          const chosen = best || data[0];
-          const result = [parseFloat(chosen.lat), parseFloat(chosen.lon)];
-          console.log(`Geocoding success for "${query}" (chosen):`, result, 'from', data.map(x=>x.display_name));
-          return result;
-        }
-
-        const result = [parseFloat(data[0].lat), parseFloat(data[0].lon)];
-        console.log(`Geocoding success for "${query}":`, result);
-        return result;
+      // Open popup for current location
+      if (index === packageData.history.length - 1) {
+        marker.openPopup();
       }
-      return null;
-    } catch (error) {
-      console.error(`Geocoding error for "${query}":`, error);
-      return null;
-    }
-  }
 
-  // --- Rate limiting wrapper for geocoding (to respect Nominatim usage limits) ---
-  const GEOCODE_RATE_MS = 1100; // 1.1 seconds between requests
-  let lastGeocodeTime = 0;
-  let geocodeQueue = Promise.resolve();
-
-  function rateLimitedTryGeocoding(query, originalName) {
-    geocodeQueue = geocodeQueue.then(async () => {
-      const now = Date.now();
-      const wait = Math.max(0, GEOCODE_RATE_MS - (now - lastGeocodeTime));
-      if (wait > 0) await new Promise(r => setTimeout(r, wait));
-      try {
-        const res = await tryGeocoding(query, originalName);
-        lastGeocodeTime = Date.now();
-        return res;
-      } catch (err) {
-        lastGeocodeTime = Date.now();
-        throw err;
-      }
+      mapLayers.markers.push(marker);
     });
-    return geocodeQueue;
+
+    // Fit map bounds to show entire route
+    if (mapLayers.polyline) {
+      map.fitBounds(mapLayers.polyline.getBounds(), { padding: [50, 50] });
+    } else if (mapLayers.markers.length > 0) {
+      const bounds = L.featureGroup(mapLayers.markers).getBounds();
+      map.fitBounds(bounds, { padding: [50, 50] });
+    }
   }
 
+  /**
+   * Creates a custom marker icon with a specified color
+   * @param {string} color - Hex color code
+   * @returns {Object} Leaflet icon object
+   */
+  function createCustomIcon(color) {
+    const svgIcon = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="41" viewBox="0 0 32 41">
+        <defs>
+          <style>
+            .marker-fill { fill: ${color}; }
+            .marker-stroke { stroke: white; stroke-width: 2; }
+          </style>
+        </defs>
+        <path class="marker-fill marker-stroke" d="M16,1 C9,1 3,7 3,14 C3,22 16,39 16,39 C16,39 29,22 29,14 C29,7 23,1 16,1 Z" />
+        <circle cx="16" cy="14" r="4" fill="white" />
+      </svg>
+    `;
+
+    return L.icon({
+      iconUrl: `data:image/svg+xml;base64,${btoa(svgIcon)}`,
+      iconSize: [32, 41],
+      iconAnchor: [16, 41],
+      popupAnchor: [0, -35],
+    });
+  }
 
   /**
-    * Shows an error message and hides the main content
-    */
+   * Validates coordinate object
+   * @param {object} coords - Coordinate object with lat and lng
+   * @returns {boolean} True if valid
+   */
+  function isValidCoordinates(coords) {
+    return (
+      coords &&
+      typeof coords === 'object' &&
+      typeof coords.lat === 'number' &&
+      typeof coords.lng === 'number' &&
+      coords.lat >= -90 &&
+      coords.lat <= 90 &&
+      coords.lng >= -180 &&
+      coords.lng <= 180
+    );
+  }
+
+  /**
+   * Starts polling for real-time updates to the package location
+   * @param {string} trackingNum - The tracking number
+   */
+  function startRealTimeUpdates(trackingNum) {
+    updateAttempts = 0;
+
+    updateInterval = setInterval(async () => {
+      if (updateAttempts >= MAX_UPDATE_ATTEMPTS) {
+        console.log('Max update attempts reached. Stopping real-time updates.');
+        clearInterval(updateInterval);
+        return;
+      }
+
+      try {
+        updateAttempts++;
+        const response = await fetch(`/track/${trackingNum}`);
+
+        if (!response.ok) {
+          console.warn(`Real-time update failed: ${response.status}`);
+          return;
+        }
+
+        const updatedData = await response.json();
+
+        // Check if location has changed
+        if (hasLocationChanged(updatedData)) {
+          console.log('Package location updated. Refreshing map...');
+          await renderMapRoute(updatedData);
+          updateAttempts = 0; // Reset attempts on successful update
+        }
+      } catch (error) {
+        console.error('Error fetching real-time update:', error);
+      }
+    }, REAL_TIME_UPDATE_INTERVAL);
+  }
+
+  /**
+   * Checks if the package location has changed
+   * @param {object} newData - Updated package data
+   * @returns {boolean} True if location changed
+   */
+  function hasLocationChanged(newData) {
+    const currentData = window.__packageData || {};
+    if (!currentData.history || currentData.history.length !== newData.history.length) {
+      return true;
+    }
+
+    const currentLast = currentData.history[currentData.history.length - 1];
+    const newLast = newData.history[newData.history.length - 1];
+
+    return currentLast?.location !== newLast?.location;
+  }
+
+  /**
+   * Shows an error message and hides the main content
+   */
   function showError(message) {
     resultsContainer.classList.add('hidden');
     trackingAlert.classList.remove('hidden');
