@@ -203,7 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const normalizedName = locationName.toLowerCase().trim();
 
     // Step 1: Try the full location name first (best fidelity)
-    let coords = await tryGeocoding(locationName);
+    let coords = await rateLimitedTryGeocoding(locationName, locationName);
     if (coords) return coords;
 
     // Step 2: Check cache for common city names (partial match)
@@ -214,7 +214,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const parts = locationName.split(',').map(p => p.trim()).filter(Boolean);
     if (parts.length > 0) {
       const firstPart = parts[0];
-      coords = await tryGeocoding(firstPart, locationName);
+      coords = await rateLimitedTryGeocoding(firstPart, locationName);
       if (coords) return coords;
     }
 
@@ -223,14 +223,14 @@ document.addEventListener('DOMContentLoaded', () => {
       const part = parts[i];
       // skip short tokens and likely postal codes
       if (!part || part.length < 3 || /\d/.test(part)) continue;
-      coords = await tryGeocoding(part, locationName);
+      coords = await rateLimitedTryGeocoding(part, locationName);
       if (coords) return coords;
     }
 
     // Step 5: Try the first word as a last attempt (handles simple typos)
     const firstWord = locationName.split(/[\s,]+/)[0];
     if (firstWord && firstWord !== locationName) {
-      coords = await tryGeocoding(firstWord, locationName);
+      coords = await rateLimitedTryGeocoding(firstWord, locationName);
       if (coords) return coords;
     }
 
@@ -303,6 +303,28 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error(`Geocoding error for "${query}":`, error);
       return null;
     }
+  }
+
+  // --- Rate limiting wrapper for geocoding (to respect Nominatim usage limits) ---
+  const GEOCODE_RATE_MS = 1100; // 1.1 seconds between requests
+  let lastGeocodeTime = 0;
+  let geocodeQueue = Promise.resolve();
+
+  function rateLimitedTryGeocoding(query, originalName) {
+    geocodeQueue = geocodeQueue.then(async () => {
+      const now = Date.now();
+      const wait = Math.max(0, GEOCODE_RATE_MS - (now - lastGeocodeTime));
+      if (wait > 0) await new Promise(r => setTimeout(r, wait));
+      try {
+        const res = await tryGeocoding(query, originalName);
+        lastGeocodeTime = Date.now();
+        return res;
+      } catch (err) {
+        lastGeocodeTime = Date.now();
+        throw err;
+      }
+    });
+    return geocodeQueue;
   }
 
 
