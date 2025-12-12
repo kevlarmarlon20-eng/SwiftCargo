@@ -6,6 +6,10 @@
   "type": "module",
   "scripts": {
     "start": "node index.js",
+    "dev": "nodemon index.js",
+    "pg:docker": "docker run --name swiftcargo-postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=swiftcargo -p 5432:5432 -d postgres:15",
+    "pg:docker-stop": "docker stop swiftcargo-postgres && docker rm swiftcargo-postgres",
+    "dev:docker": "npm run pg:docker && sleep 3 && npm run dev",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -19,7 +23,10 @@
   },
   "homepage": "https://github.com/kevlarmarlon20-eng/SwiftCargo#readme",
   "dependencies": {
+    "dotenv": "^17.2.3",
     "express": "^5.1.0",
-    "nanoid": "^5.1.6"
+    "joi": "^17.13.1",
+    "nanoid": "^5.1.6",
+    "pg": "^8.10.0"
   }
 }

@@ -2,30 +2,58 @@
 document.addEventListener('DOMContentLoaded', () => {
 
   // --- Authentication ---
-  let adminToken = '';
+  const TOKEN_KEY = 'adminSecretToken';
+  let adminToken = sessionStorage.getItem(TOKEN_KEY);
 
-  function getAdminToken() {
-    // In a real app, you'd have a proper login page.
-    // For this prototype, we'll use a simple prompt.
-    const token = prompt('Please enter the admin secret token:');
-    if (token) {
-      adminToken = token;
+  const registerForm = document.getElementById('register-package-form');
+  const updateForm = document.getElementById('update-status-form');
+  const registerStatus = document.getElementById('register-form-status');
+  const updateStatus = document.getElementById('update-form-status');
+  const logoutButton = document.getElementById('logout-button');
+
+  function setFormsEnabled(enabled) {
+    const forms = [registerForm, updateForm];
+    forms.forEach(form => {
+      if (form) {
+        const elements = form.querySelectorAll('input, select, textarea, button');
+        elements.forEach(element => element.disabled = !enabled);
+      }
+    });
+  }
+
+  async function checkTokenAndInitialize() {
+    if (!adminToken) {
+      const token = prompt('Please enter the admin secret token:');
+      if (token) {
+        sessionStorage.setItem(TOKEN_KEY, token);
+        adminToken = token;
+      }
+    }
+
+    if (adminToken) {
+      // Optional: Verify token with the server, e.g., by fetching a protected resource
+      // For now, we'll assume the token is valid if it exists.
+      setFormsEnabled(true);
+      showStatus(registerStatus, 'Authenticated. Ready to register and update packages.', false);
     } else {
-      alert('No token provided. API requests will fail.');
+      setFormsEnabled(false);
+      showStatus(registerStatus, 'Authentication failed. Please provide a token.', true);
+      showStatus(updateStatus, 'Authentication failed. Please provide a token.', true);
     }
   }
 
-  // Get the token as soon as the page loads
-  getAdminToken();
+  // Logout
+  if (logoutButton) {
+    logoutButton.addEventListener('click', () => {
+      sessionStorage.removeItem(TOKEN_KEY);
+      adminToken = null;
+      window.location.reload();
+    });
+  }
 
+  // Initialize authentication
+  checkTokenAndInitialize();
 
-  // Select the forms
-  const registerForm = document.getElementById('register-package-form');
-  const updateForm = document.getElementById('update-status-form');
-
-  // Select the status message elements (we'll add these to the HTML next)
-  const registerStatus = document.getElementById('register-form-status');
-  const updateStatus = document.getElementById('update-form-status');
 
   // 1. Handle the "Register New Package" form submission
   if (registerForm) {
